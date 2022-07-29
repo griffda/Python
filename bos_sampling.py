@@ -47,8 +47,9 @@ def ball_on_slope(sample_array):
 
     We will run the ball on a slope visualisation for each row of sample values provided.
     """
-    for samples in sample_array:
-        m, R, mu, L, s_angle, Ll, Lh, theta1, theta, Ff, F_norm, F_norm_v, F_f_v, w = get_initial_parameters(samples)
+    output_array=np.zeros((np.shape(sample_array)[0],3))
+    for i in range(np.shape(sample_array)[0]):
+        m, R, mu, L, s_angle, Ll, Lh, theta1, theta, Ff, F_norm, F_norm_v, F_f_v, w = get_initial_parameters(sample_array[i,:])
 
         (
             initial_velocity,
@@ -91,28 +92,30 @@ def ball_on_slope(sample_array):
         ##This runs a function using some parameters, and then returning a tuple containing slope, ball, ball_v and k_e
         ball_a, ball, ball_v, k_e = run_visualisation(F_norm, F_norm_v, F_f_v, Ff, m, ball_v, ball, theta1, theta)
         
-        ####TRYING VECTORIZATION
-        # #output_array = np.column_stack((ball_v, ball_a, k_e))
-        # # output_array = np.full((1,3),(ball_v, ball_a, k_e))
-        # # output = np.zeros((5,3), dtype=(int), like=output_array)
-        # # output2 = np.full((5,3),(output))
-        # # #[output_array for x in output]
-        # # print(output2)
+        
+        #output_array = np.column_stack((ball_v, ball_a, k_e))
+        output_array[i,:] = [ball_v, ball_a, k_e]
+        
+        #output = np.zeros((5,3), dtype=(int), like=output_array)
+        #output = np.full((5,3),(output_array))
+        
+        #[output_array for x in output]
+        #print(output)
         
         # for i in range(0):
         #         output[0, (output_array)]
         #         print(output)
-    
-    return ball, ball_v, ball_a, k_e
+    print(output_array)
+    return output_array
 
 ##OUTPUT DATAFRAME
 def create_output_dataframe(ball, ball_v, ball_a, k_e):
     """
     using ball on slope function, this collates all output data into one dataframe and output.csv file 
     """
-    #Creating a new data frame for the outputs
-    # Note: you will get n number of outputs (n=no. of samples), so you'll need to return a datastructure that
-    # contains all of them.
+    ##Creating a new data frame for the outputs
+    ##Note: you will get n number of outputs (n=no. of samples), so you'll need to return a datastructure that
+    ##contains all of them.
     output = {
         'output parameters': ['distance', 'final volecities', 'final accellerations', 'final kinetic energies'],
         'symbol': ['d', 'v_f', 'a_f', 'ke_f'],
@@ -129,7 +132,7 @@ def create_output_dataframe(ball, ball_v, ball_a, k_e):
     ###Saving to new csv after data manipulation
     df2.to_csv('output.csv', index=False)
     
-    return output
+    return output, df2
 
 def get_initial_parameters(samples):
     """
