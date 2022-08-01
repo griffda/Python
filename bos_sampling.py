@@ -47,7 +47,9 @@ def ball_on_slope(sample_array):
 
     We will run the ball on a slope visualisation for each row of sample values provided.
     """
+    #Creating an array filled with zeros with the shape of "sample_array"
     output_array=np.zeros((np.shape(sample_array)[0],3))
+    #Loop that runs in parallel(?) over "sample_array" 
     for i in range(np.shape(sample_array)[0]):
         m, R, mu, L, s_angle, Ll, Lh, theta1, theta, Ff, F_norm, F_norm_v, F_f_v, w = get_initial_parameters(sample_array[i,:])
 
@@ -92,47 +94,28 @@ def ball_on_slope(sample_array):
         ##This runs a function using some parameters, and then returning a tuple containing slope, ball, ball_v and k_e
         ball_a, ball, ball_v, k_e = run_visualisation(F_norm, F_norm_v, F_f_v, Ff, m, ball_v, ball, theta1, theta)
         
-        
-        #output_array = np.column_stack((ball_v, ball_a, k_e))
+        ##Vectorised (?) loop for generating an output array of ball_v, ball_a, and k_e. 
         output_array[i,:] = [ball_v, ball_a, k_e]
         
-        #output = np.zeros((5,3), dtype=(int), like=output_array)
-        #output = np.full((5,3),(output_array))
-        
-        #[output_array for x in output]
-        #print(output)
-        
-        # for i in range(0):
-        #         output[0, (output_array)]
-        #         print(output)
-    print(output_array)
     return output_array
 
 ##OUTPUT DATAFRAME
-def create_output_dataframe(ball, ball_v, ball_a, k_e):
-    """
-    using ball on slope function, this collates all output data into one dataframe and output.csv file 
-    """
-    ##Creating a new data frame for the outputs
-    ##Note: you will get n number of outputs (n=no. of samples), so you'll need to return a datastructure that
-    ##contains all of them.
-    output = {
-        'output parameters': ['distance', 'final volecities', 'final accellerations', 'final kinetic energies'],
-        'symbol': ['d', 'v_f', 'a_f', 'ke_f'],
-        'value': [ball, ball_v, ball_a, k_e],
-        'units': ['m', 'm/s', 'm/s^2', 'J']
-    }
-    
-    print(output)
-    
-    df2 = pd.DataFrame(output,
-              columns = ['output parameters','symbol','value','units'],
-              index=['a', 'b', 'c', 'd']
-              )
-    ###Saving to new csv after data manipulation
-    df2.to_csv('output.csv', index=False)
-    
-    return output, df2
+def create_output_dataframe(output_array):
+     """
+     using ball_on_slope function, this collates all output data into one dataframe and output.csv file 
+     """
+     ##Creating a new data frame for the outputs
+     ##Note: you will get n number of outputs (n=no. of samples), so you'll need to return a datastructure that
+     ##contains all of them.
+     
+     output_array = ball_on_slope()
+     
+     out_dat = pd.DataFrame(output_array[1:,1:], 
+     columns = [ 'distance', 'final volecities', 'final accellerations', 'final kinetic energies'],
+     index=['a', 'b', 'c', 'd']
+     )
+     print(out_dat)
+     return out_dat
 
 def get_initial_parameters(samples):
     """
