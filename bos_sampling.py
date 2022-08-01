@@ -96,7 +96,7 @@ def ball_on_slope(sample_array):
         
         ##Vectorised (?) loop for generating an output array of ball_v, ball_a, and k_e. 
         output_array[i,:] = [ball_v, ball_a, k_e]
-        
+       
     return output_array
 
 ##OUTPUT DATAFRAME
@@ -108,13 +108,13 @@ def create_output_dataframe(output_array):
      ##Note: you will get n number of outputs (n=no. of samples), so you'll need to return a datastructure that
      ##contains all of them.
      
-     output_array = ball_on_slope()
-     
-     out_dat = pd.DataFrame(output_array[1:,1:], 
-     columns = [ 'distance', 'final volecities', 'final accellerations', 'final kinetic energies'],
-     index=['a', 'b', 'c', 'd']
+     out_dat = pd.DataFrame(output_array[:,:], 
+     columns = ['final velocities', 'final accellerations', 'final kinetic energies'],
      )
-     print(out_dat)
+     
+     ###Saving to new csv after data manipulation
+     out_dat.to_csv('out_put.csv', index=False)
+     
      return out_dat
 
 def get_initial_parameters(samples):
@@ -169,8 +169,8 @@ def run_visualisation(F_norm, F_norm_v, F_f_v, Ff, m, ball_v, ball, theta1, thet
     g = -9.81
     w = m * g
     while t < T:
-        vp.rate(100)
-        #vp.scene.visible = False
+        #vp.rate(100)
+        vp.scene.visible = False
         # vp.scene.width = scene.height = 1
         #if -w*R>=ball_v.mag/m:
             #Ff = vp.vector(0,0,0)
