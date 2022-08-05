@@ -100,7 +100,7 @@ def ball_on_slope(sample_array):
     return output_array
 
 ##OUTPUT DATAFRAME
-def create_output_dataframe(output_array):
+def create_output_dataframe(output_array, sample_array):
      """
      using ball_on_slope function, this collates all output data into one dataframe and output.csv file 
      """
@@ -108,12 +108,20 @@ def create_output_dataframe(output_array):
      ##Note: you will get n number of outputs (n=no. of samples), so you'll need to return a datastructure that
      ##contains all of them.
      
+     in_dat = pd.DataFrame(sample_array[:,:],
+                           columns = ['m', 'r', 'mu', 'theta', 'l'],
+                           )
+    
      out_dat = pd.DataFrame(output_array[:,:], 
-     columns = ['final velocities', 'final accellerations', 'final kinetic energies'],
+     columns = ['final velocities', 'final accellerations', 'KE'],
      )
+    
+     out_dat2 = [in_dat, out_dat]
+     
+     out_dat3 = pd.concat(out_dat2, axis=1, join="inner")
      
      ###Saving to new csv after data manipulation
-     out_dat.to_csv('out_put.csv', index=False)
+     out_dat3.to_csv('output.csv', index=True)
      
      return out_dat
 
@@ -187,4 +195,3 @@ def run_visualisation(F_norm, F_norm_v, F_f_v, Ff, m, ball_v, ball, theta1, thet
         t += dt
     
     return ball.pos.mag, ball_v, k_e, ball_a
-

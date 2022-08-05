@@ -38,9 +38,11 @@ sample_s_angles = norm(loc=0.7, scale=0.15).ppf(s_angle)
 ##This runs a function using some parameters, and then returning a tuple containing sample array
 sample_array = np.column_stack((sample_masses, sample_radii, sample_fric_coeffs, sample_lengths, sample_s_angles))
 
-##This runs a function using some parameters, and then returning a tuple containing output array
+#This runs a function using some parameters, and then returning a tuple containing output array
 output_array = ball_on_slope(sample_array)
 
 ###FUNCTIONS 
 #ball_on_slope(sample_array)
-create_output_dataframe(output_array)
+create_output_dataframe(output_array, sample_array)
+
+
