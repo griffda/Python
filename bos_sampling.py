@@ -121,7 +121,7 @@ def create_output_dataframe(output_array, sample_array):
      out_dat3 = pd.concat(out_dat2, axis=1, join="inner")
      
      ###Saving to new csv after data manipulation
-     out_dat3.to_csv('output.csv', index=True)
+     out_dat3.to_csv('output2.csv', index=True)
      
      return out_dat
 

@@ -8,8 +8,6 @@ THIS IS A SCRIPT FOR MAKING A BAYESIAN NETWORK FOR THE BOS MODEL
 """
 from pgmpy.models import BayesianNetwork
 import pandas as pd 
-from pgmpy.estimators import MaximumLikelihoodEstimator
-import numpy as np
 
 #import output csv from BOS_functions script. 
 df = pd.read_csv('output.csv', usecols = ['m', 'r', 'mu', 'theta', 'l', 'final velocities', 'final accellerations', 'KE'],
@@ -23,19 +21,8 @@ train_data = df[:10]
 model = BayesianNetwork([('mu', 'KE'), ('r', 'KE'),
                        ('m', 'KE'), ('theta', 'KE'),
                        ('l', 'KE')])
-model.nodes()
 
-model.get_cpds("KE")
-
-#Fitting the model using maximum likelihood estimator
-mle = MaximumLikelihoodEstimator(model=model, data=train_data)
-
-#estimating the CPD for a single node
-print(mle.estimate_cpd(node="KE"))
-
-#estimating CPDs for all the nodes in the model
-mle.get_parameters()[:10] #shows first 10 CPDs in the output 
-
-#verifiying that the learned parameters are almost equal
-np.allclose(model.get_cpds('KE'), mle.estimate_cpd('KE'), atol=0.01)
-
+#Estimates the CPD for each variable based on a given data set
+model.fit(train_data)
+model.get_cpds()
+print(model.get_cpds('KE'))
