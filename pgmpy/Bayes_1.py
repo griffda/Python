@@ -4,7 +4,8 @@
 Created on Tue Aug  2 12:58:05 2022
 
 @author: tomgriffiths
-THIS IS A SCRIPT FOR MAKING A BAYESIAN NETWORK FOR THE BOS MODEL
+THIS IS A SCRIPT FOR MAKING A BAYESIAN NETWORK FOR THE BOS MODEL 
+FROM THE LIBRARY PGMPY
 """
 from pgmpy.models import BayesianNetwork
 import pandas as pd 

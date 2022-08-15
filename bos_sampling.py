@@ -6,8 +6,8 @@ Created on Fri Apr  1 11:01:59 2022
 @author: tomgriffiths
 """
 
-from pyDOE import lhs
-from scipy.stats.distributions import norm
+# from pyDOE import lhs
+# from scipy.stats.distributions import norm
 import pandas as pd
 import numpy as np
 import vpython as vp

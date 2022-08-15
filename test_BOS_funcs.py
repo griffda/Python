@@ -7,10 +7,10 @@ Created on Tue Jul 19 12:33:36 2022
 """
 
 import numpy as np
-from bos_sampling import ball_on_slope
-from bos_sampling import create_output_dataframe
 from pyDOE import lhs
 from scipy.stats.distributions import norm
+from bos_sampling import ball_on_slope
+from bos_sampling import create_output_dataframe
 
 #generating one column of 5 samples for mass around value of 2 with SD of 1
 mass = lhs(1, samples=16, criterion=('center'))
