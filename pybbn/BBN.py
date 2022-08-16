@@ -11,13 +11,16 @@ for the BOS model
 import pandas as pd
 from pybbn.graph.factory import Factory
 
-df = pd.read_csv('/Users/tomgriffiths/OneDrive - Imperial College London/Research/Python/gitlibraries/Python/output.csv')
+df = pd.read_csv('/Users/tomgriffiths/OneDrive - Imperial College London/Research/Python/gitlibraries/Python/output2.csv',usecols = ['m','vf', 'KE'],
+encoding=('utf-8'))
+
+print(df)
+
 structure = {
     'm': [],
-    'r': [],
-    'mu': [],
-    'theta': [],
-    'l': [],
-    'KE': ['m', 'r', 'mu', 'theta', 'l']
+    'vf': ['m'],
+    'KE': ['vf'],
     }
 bbn = Factory.from_data(structure, df)
+
+

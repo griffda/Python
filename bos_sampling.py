@@ -113,7 +113,7 @@ def create_output_dataframe(output_array, sample_array):
                            )
     
      out_dat = pd.DataFrame(output_array[:,:], 
-     columns = ['final velocities', 'final accellerations', 'KE'],
+     columns = ['vf', 'af', 'KE'],
      )
     
      out_dat2 = [in_dat, out_dat]

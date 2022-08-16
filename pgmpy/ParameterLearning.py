@@ -11,7 +11,7 @@ import pandas as pd
 from pgmpy.estimators import MaximumLikelihoodEstimator
 
 #import output csv from BOS_functions script. 
-df = pd.read_csv('output.csv', usecols = ['m', 'r', 'mu', 'theta', 'l', 'final velocities', 'final accellerations', 'KE'],
+df = pd.read_csv('output.csv', usecols = ['m', 'r', 'mu', 'theta', 'l', 'vf', 'af', 'KE'],
 encoding=('utf-8'))
 #this is creating a new variable of data from the data frame to train the BN
 train_data = df[:16]
