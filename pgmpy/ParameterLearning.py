@@ -11,7 +11,7 @@ import pandas as pd
 from pgmpy.estimators import MaximumLikelihoodEstimator
 
 #import output csv from BOS_functions script. 
-df = pd.read_csv('output.csv', usecols = ['m', 'r', 'mu', 'theta', 'l', 'vf', 'af', 'KE'],
+df = pd.read_csv('output2.csv', usecols = ['m', 'r', 'mu', 'theta', 'l', 'vf', 'af', 'KE'],
 encoding=('utf-8'))
 #this is creating a new variable of data from the data frame to train the BN
 train_data = df[:16]
@@ -36,18 +36,21 @@ model.check_model()
 mle = MaximumLikelihoodEstimator(model=model, data=train_data)
 
 ##estimating the CPD for a single node
-# print(mle.estimate_cpd('KE'))
-# print(model.get_cpds('KE'))
+print(mle.estimate_cpd('KE'))
+print(model.get_cpds('KE'))
 
-df = pd.read_csv('output2.csv', usecols = ['m', 'r', 'mu', 'theta', 'l', 'final velocities', 'final accellerations', 'KE'],
-encoding=('utf-8'))
 
-new_data = df[:16]
+###These next lines are for updating with new data. 
+# df = pd.read_csv('output2.csv', usecols = ['m', 'r', 'mu', 'theta', 'l', 'vf', 'af', 'KE'],
+# encoding=('utf-8'))
 
-model.fit_update(train_data)
+
+#new_data = df[:16]
+
+#model.fit_update(train_data)
 
 #estimating CPDs for all the nodes in the model
-#mle.get_parameters()[:10] #shows first 10 CPDs in the output 
+mle.get_parameters()[:10] #shows first 10 CPDs in the output 
 #verifiying that the learned parameters are almost equal
 #np.allclose(model.get_cpds("KE").values, mle.estimate_cpd("KE").values, atol=0.01)
 
