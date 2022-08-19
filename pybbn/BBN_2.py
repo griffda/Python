@@ -2,12 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Aug 12 13:58:57 2022
-
 @author: tomgriffiths
-
 In this script we will attepmt to create a BN using the library pyBBN 
 for the BOS model.
-
 This one is an update of BBN_1 and will attempt to dicretize the data into bins before being put through the BN. 
 """
 
