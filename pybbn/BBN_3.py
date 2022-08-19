@@ -90,18 +90,27 @@ df['af_bins'] = pd.cut(df['af'], 8,
 df['KE_bins'] = pd.cut(df['KE'], 8,
                        labels=["very very small", "very small", "small", "small/medium", "medium", "medium/large", "large", "very large"]
                        )                       
+
 #print(df)
 
 ###We can print the dataframe and check that the above line has worked
-# print(df['m_bins'].value_counts(normalize=True).sort_index())
-# print(df['r_bins'].value_counts(normalize=True).sort_index())
-# print(df['mu_bins'].value_counts(normalize=True).sort_index())
-# print(df['theta_bins'].value_counts(normalize=True).sort_index())
-# print(df['l_bins'].value_counts(normalize=True).sort_index())
-# print(df['vf_bins'].value_counts(normalize=True).sort_index())
-# print(df['af_bins'].value_counts(normalize=True).sort_index())
-# print(df['KE_bins'].value_counts(normalize=True).sort_index())
+print(df['m_bins'].value_counts(normalize=True).sort_index())
+print(df['r_bins'].value_counts(normalize=True).sort_index())
+print(df['mu_bins'].value_counts(normalize=True).sort_index())
+print(df['theta_bins'].value_counts(normalize=True).sort_index())
+print(df['l_bins'].value_counts(normalize=True).sort_index())
+print(df['vf_bins'].value_counts(normalize=True).sort_index())
+print(df['af_bins'].value_counts(normalize=True).sort_index())
+print(df['KE_bins'].value_counts(normalize=True).sort_index())
 
+print(df['m_bins'].value_counts().sort_index())
+print(df['r_bins'].value_counts().sort_index())
+print(df['mu_bins'].value_counts().sort_index())
+print(df['theta_bins'].value_counts().sort_index())
+print(df['l_bins'].value_counts().sort_index())
+print(df['vf_bins'].value_counts().sort_index())
+print(df['af_bins'].value_counts().sort_index())
+print(df['KE_bins'].value_counts().sort_index())
 
 ###Calculate probability distributions for the dataset
 def probs(data, child, parent1=None, parent2=None, parent3=None, parent4=None, parent5=None):
@@ -172,7 +181,7 @@ KE = BbnNode(Variable(7, 'KE', ["very very small", "very small", "small", "small
 # print(probs(df, child='r_bins'))
 
 ###Create network:
-###This one throws an error for 
+###This one throws an error "IndexError: index 8 is out of bounds for axis 0 with size 8" as soon as edges are added.
 bbn = Bbn() \
     .add_node(m) \
     .add_node(r) \
@@ -240,6 +249,6 @@ def print_probs():
         print('----------------')
 
 # Use the above function to print marginal probabilities
-# print_probs()
+print_probs()
 # plt.hist(df["KE_bins"], bins =8)
 # plt.show()

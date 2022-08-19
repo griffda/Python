@@ -1,0 +1,18 @@
+from BNdata import *
+from BN_Metamodel_easy import *
+
+### Point to csvfilepath
+csvfilepath = '/Users/tomgriffiths/OneDrive - Imperial College London/Research/Python/gitlibraries/Python/output2.csv'
+### specify which variables are response targets
+targets = ['m', 'vf']
+### Instantiate a bnmetamodel wrapper - specify targets
+b = BN_Metamodel_easy.BN_Metamodel_easy(csvfilepath, targets)
+### Construct the bnmetamodel
+bn = b.generate()
+### Specify scenario of interest
+evidence = {'m':[1.0, 0.0, 0.0, 0.0, 0.0], 'vf':[1.0, 0.0, 0.0, 0.0, 0.0] }
+### Perform inference to 'update' probability distribution (Bayesian inference)
+posteriors = bn.inferPD(evidence)
+### Plot posterior probability distributions
+bn.plotPDs(xlabel='Ranges ', ylabel='Probability',maintitle='Posterior Distributions',displayplt=True,
+posteriorPD=posteriors,evidence=evidence.keys())
