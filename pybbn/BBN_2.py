@@ -81,9 +81,6 @@ m = BbnNode(Variable(0, 'm', ["very very small", "very small", "small", "small/m
 vf = BbnNode(Variable(1, 'vf', ["very very small", "very small", "small", "small/medium", "medium", "medium/large", "large", "very large"]), probs(df, child='vf_bins', parent1='m_bins'))
 KE = BbnNode(Variable(2, 'KE', ["very very small", "very small", "small", "small/medium", "medium", "medium/large", "large", "very large"]), probs(df, child='KE_bins', parent1='vf_bins'))
 
-
-print(probs(df, child='m_bins'))
-
 # create network:
 bbn = Bbn() \
     .add_node(m) \
