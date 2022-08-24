@@ -13,11 +13,11 @@ import csv
 
 #input parameters 
 #mass 
-m = 2
+m = 2.97
 #radius of ball  
 R = 1
 #x-direction velocity
-v0 = -2
+v0 = 2
 #friction co-efficient
 mu = 0.0001
 #acceleration due to gravity
@@ -25,12 +25,15 @@ mu = 0.0001
 g = -9.81
 #length of the slope
 L=10
+#angles for resolving
+theta = np.pi/18
 #slope angle
 theta1 = np.pi/18
 Ll = L*np.cos(theta1)
 Lh = L*np.sin(theta1)
-#angles for resolving
-theta = np.pi/18
+v0_x = v0*np.cos(theta1)
+v0_y = v0*np.sin(theta1)
+
 # initial time
 t = 0 
 dt = 0.005
@@ -46,7 +49,7 @@ a = (2/3) * g * np.sin(theta)
 
 #positioning the ball and the slope together using vector quantities
 #initial_position = vp.vector(Ll, Lh, 0)
-initial_velocity = vp.vector(0, 0, 0)
+initial_velocity = vp.vector(v0_x, -v0_y, 0)
 initial_acc = vp.vector(0, 0, 0)
 
 initial_position = vp.vector(-L+Ll,-R+Lh, 0)
@@ -95,36 +98,55 @@ acc = vp.gcurve(color=vp.color.blue, label="a")
 kinetic = vp.gcurve(color=vp.color.red, label="KE")
 vel = vp.gcurve(color=vp.color.green, label="vel")
 
+# #running the visualisation
+# while t < T:
+#     vp.rate(100)
+#     #if -w*R>=ball_v.mag/m:
+#         #Ff = vp.vector(0,0,0)
+#     ball_net = -F_norm + Ff
+#     ball_v.x = ball_v.x + ((ball_net) / m) * dt
+#     ball_v.y = ball_v.y + ((w - F_norm_v - F_f_v) / m) * dt
+#     ball.pos = ball.pos + ball_v * dt
+#     ball_a = (2/3) * g * np.sin(theta)
+#     ball_v.mag += ball_a * dt
+#     k_e = 0.5 * m * ball_v.mag**2
+#     #kinetic.plot(t, k_e)
+#     acc.plot(t, ball_a)
+#     vel.plot(t, ball_v.mag)
+#     t += dt
+
 #running the visualisation
 while t < T:
     vp.rate(100)
     #if -w*R>=ball_v.mag/m:
         #Ff = vp.vector(0,0,0)
-    ball_net = -F_norm + Ff
-    ball_v.x = ball_v.x + ((ball_net) / m) * dt
-    ball_v.y = ball_v.y + ((w - F_norm_v - F_f_v) / m) * dt
-    ball.pos = ball.pos + ball_v * dt
+    #ball_net = -F_norm + Ff
+    #ball_v.x = ball_v.x + ((ball_net) / m) * dt
+    #ball_v.y = ball_v.y + ((w - F_norm_v - F_f_v) / m) * dt
+    #ball.pos = ball.pos + ball_v * dt
     ball_a = (2/3) * g * np.sin(theta)
-    ball_a += ball_v.mag * dt
+    ball_v.x -= ball_a * dt * np.cos(theta)
+    ball_v.y += ball_a * dt * np.sin(theta)
+    ball.pos = ball.pos + ball_v * dt
     k_e = 0.5 * m * ball_v.mag**2
-    #kinetic.plot(t, k_e)
     acc.plot(t, ball_a)
     vel.plot(t, ball_v.mag)
     t += dt
+    
 
 print("d = ",ball.pos.mag," m")
-print("v final = ",ball_v.x," m/s")   
+print("v final = ",ball_v.mag," m/s")   
 print("final accelleration = ", ball_a, "m/s**2") 
 print("KE final = ",k_e, " J")
 
 values = [ball.pos.mag, ball_v.x, ball_a, k_e]
 value_unit = [ 'm', 'm/s', 'm/s**2', 'J']
     
-with open('output.csv', 'w', newline='') as csvfile:
-    fieldnames = ['unit', 'value']
-    thewriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    thewriter.writeheader()
-    for value in values :
-        thewriter.writerow({'value':value, 'unit':value_unit})
+# with open('output.csv', 'w', newline='') as csvfile:
+#     fieldnames = ['unit', 'value']
+#     thewriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
+#     thewriter.writeheader()
+#     for value in values :
+#         thewriter.writerow({'value':value, 'unit':value_unit})
 
         

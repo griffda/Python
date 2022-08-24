@@ -33,23 +33,23 @@ df = pd.read_csv('/Users/tomgriffiths/OneDrive - Imperial College London/Researc
 # Now we can use the pd.cut function to dicretise the data into bins.
 # These have been specified depending on the mass of the ball: very small, small etc.
 df['m_bins'] = pd.cut(x=df['m'],
-                      bins=[0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0],
+                      bins=8,
                       labels=["very very small", "very small", "small", "small/medium", "medium", "medium/large", "large", "very large"]
                       )
 
 df['vf_bins'] = pd.cut(x=df['vf'],
-                       bins=[0, 4, 8, 12, 16, 20, 24, 28, 33],
+                       bins=8,
                        labels=["very very small", "very small", "small", "small/medium", "medium", "medium/large", "large", "very large"]
                        )
 
 df['KE_bins'] = pd.cut(x=df['KE'],
-                       bins=[-7, -5.25, -3.5, -1.75, 0, 1.75, 3.5, 5.25, 7],
+                       bins=8,
                        labels=["very very small", "very small", "small", "small/medium", "medium", "medium/large", "large", "very large"]
                        )
 print(df)
 
 # we can print the dataframe and check that the above line has worked
-print(df['vf_bins'].value_counts(normalize=True).sort_index())
+#print(df['vf_bins'].value_counts(normalize=True).sort_index())
 
 # calculate probability distributions for the dataset
 
@@ -73,13 +73,16 @@ def probs(data, child, parent1=None, parent2=None):
         print("Error in Probability Frequency Calculations")
     return prob
 
+# print(probs(df, child='m_bins'))
+# print(probs(df, child='KE_bins', parent1='vf_bins'))
 
 # create nodes for BBN
 m = BbnNode(Variable(0, 'm', ["very very small", "very small", "small", "small/medium", "medium", "medium/large", "large", "very large"]), probs(df, child='m_bins'))
 vf = BbnNode(Variable(1, 'vf', ["very very small", "very small", "small", "small/medium", "medium", "medium/large", "large", "very large"]), probs(df, child='vf_bins', parent1='m_bins'))
 KE = BbnNode(Variable(2, 'KE', ["very very small", "very small", "small", "small/medium", "medium", "medium/large", "large", "very large"]), probs(df, child='KE_bins', parent1='vf_bins'))
-# print(vf)
 
+
+print(probs(df, child='m_bins'))
 
 # create network:
 bbn = Bbn() \
@@ -121,7 +124,8 @@ def drawbn(bbn):
     plt.axis("off")
     plt.show()
     return plt
-
+ 
+drawbn(bbn)
 
 # Define a function for printing marginal probabilities
 def print_probs():
@@ -134,5 +138,5 @@ def print_probs():
 
 # Use the above function to print marginal probabilities
 print_probs()
-plt.hist(df["KE_bins"], bins =8)
-plt.show()
+#plt.hist(df["KE_bins"], bins =8)
+#plt.show()
