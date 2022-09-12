@@ -46,7 +46,7 @@ df['KE_bins'] = pd.cut(x=df['KE'],
                        bins=8,
                        labels=["very very small", "very small", "small", "small/medium", "medium", "medium/large", "large", "very large"]
                        )
-print(df)
+#print(df)
 
 # we can print the dataframe and check that the above line has worked
 #print(df['vf_bins'].value_counts(normalize=True).sort_index())
@@ -73,8 +73,8 @@ def probs(data, child, parent1=None, parent2=None):
         print("Error in Probability Frequency Calculations")
     return prob
 
-# print(probs(df, child='m_bins'))
-# print(probs(df, child='KE_bins', parent1='vf_bins'))
+print(probs(df, child='m_bins'))
+print(probs(df, child='KE_bins', parent1='vf_bins'))
 
 # create nodes for BBN
 m = BbnNode(Variable(0, 'm', ["very very small", "very small", "small", "small/medium", "medium", "medium/large", "large", "very large"]), probs(df, child='m_bins'))
@@ -122,7 +122,7 @@ def drawbn(bbn):
     plt.show()
     return plt
  
-drawbn(bbn)
+#drawbn(bbn)
 
 # Define a function for printing marginal probabilities
 def print_probs():
@@ -134,6 +134,6 @@ def print_probs():
         print('----------------')
 
 # Use the above function to print marginal probabilities
-print_probs()
+#print_probs()
 #plt.hist(df["KE_bins"], bins =8)
 #plt.show()
