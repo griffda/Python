@@ -45,14 +45,14 @@ def probs(data, child, parent1=None, parent2=None):
     else: print("Error in Probability Frequency Calculations")
     return prob 
 
-print()
+print(probs(df, child='vf', parent1='m'))
 
 #create nodes for BBN 
 ##NOTES the values these lines are searching for in the blue brackets are not correct.
 ##need to figure out a way of telling it to search for certain values within a range. 
-m = BbnNode(Variable(0, 'm', [] ), probs(df, child='m'))
-vf = BbnNode(Variable(1, 'vf', []), probs(df, child='vf', parent1='m'))
-KE = BbnNode(Variable(2, 'KE', []), probs(df, child='KE', parent1='vf'))
+m = BbnNode(Variable(0, 'm', ['4'] ), probs(df, child='m'))
+vf = BbnNode(Variable(1, 'vf', ['6']), probs(df, child='vf', parent1='m'))
+KE = BbnNode(Variable(2, 'KE', ['8']), probs(df, child='KE', parent1='vf'))
 
 #create network: 
 bbn = Bbn() \

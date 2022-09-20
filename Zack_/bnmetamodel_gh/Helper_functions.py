@@ -150,16 +150,15 @@ def draw_barchartpd(binranges, probabilities):
     edge = []
     #edge.append(binranges[0][len(binranges[0])-1])
     for index, range in enumerate(binranges):
-        #print 'range ', 
-        range
+        print('range '), range
         edge.append(range[0])
         widths.append(range[1]-range[0])
         xticksv.append(((range[1]-range[0])/2)+range[0])
         if index ==len(binranges)-1: edge.append(range[1])
 
-    # print 'xticks ', xticksv
-    # print 'probabilities ', probabilities
-    # print 'edge ', edge
+    print('xticks '), xticksv
+    print('probabilities '), probabilities
+    print('edge '), edge
 
     b = plt.bar(xticksv, probabilities, align='center', width=widths, color='black', alpha=0.2)
 
@@ -189,7 +188,7 @@ def draw_histograms(df, binwidths, n_rows, n_cols, maintitle, xlabel, ylabel, di
             #minv = min(df[var_name])
             #maxv = max(df[var_name])
             #df[var_name].hist(bins=np.arange(minv, maxv + binwidths, binwidths),ax=ax)
-            #print 'binwidths ', binwidths
+            print('binwidths '), binwidths
 
             df[var_name].hist(bins=binwidths, ax=ax, color='black')
             #df[var_name].plot(kind='kde', ax=ax, secondary_y=False, grid=None, lw=0.5 )
@@ -627,8 +626,7 @@ def inferPosteriorDistribution(queries, evidence, baynet):  # TODO: extend to ha
 
     # result = fn.condprobve(query, evidence) #from library
     result = condprobve2(fn, queries, evidence)  # written here
-    #print 'result.vals ', 
-    result.vals
+    print('result.vals '), result.vals
     probabilities = printdist(result, baynet)
     # for index,key in queries:
     probabilities.sort_values(['max_def'], inplace=True)  # make sure probabilities are listed in order of bins
@@ -637,8 +635,7 @@ def inferPosteriorDistribution(queries, evidence, baynet):  # TODO: extend to ha
 
 def laplacesmooth(bn): # TODO: update this function as per code written in condprobve or lmeestimateparams
     for vertex in bn.V:
-        #print 'vertex ', 
-        vertex
+        print('vertex '), vertex
         # print bn.V[vertex]
         numBins = bn.Vdata[vertex]['numoutcomes']
 
@@ -659,8 +656,7 @@ def laplacesmooth(bn): # TODO: update this function as per code written in condp
 def buildBN(trainingData, binstyleDict, numbinsDict, **kwargs): # need to modify to accept skel or skelfile
 
     discretized_training_data, bin_ranges = discretizeTrainingData(trainingData, binstyleDict, numbinsDict, True)
-    #print 'discret training ',
-    discretized_training_data
+    print('discret training '),discretized_training_data
 
 
     if 'skel'in kwargs:

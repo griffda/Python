@@ -11,7 +11,7 @@ for the BOS model.
 BBNs structure is updated: 
 - input nodes: theta, m, v0
 - output nodes: vf, KE.
-- Larger data set of 200 rows.
+- Larger data set of 500 rows.
 - Data will use preset bin widths and will test how changing this affects the outputs.
 """
 
@@ -20,7 +20,7 @@ import networkx as nx  # for drawing graphs
 import matplotlib.pyplot as plt  # for drawing graphs
 import pandas as pd
 from pybbn.graph.factory import Factory
-from pybbn.graph.dag import Bbn
+from pybbn.graph.dag import Bbn 
 from pybbn.graph.edge import Edge, EdgeType
 from pybbn.graph.jointree import EvidenceBuilder
 from pybbn.graph.node import BbnNode
@@ -37,80 +37,99 @@ df = pd.read_csv('/Users/tomgriffiths/OneDrive - Imperial College London/Researc
 ##we can print the dataframe and check that the above line has worked
 # print(df)
 
-df['vf_bins']= np.digitize(df['vf'], np.linspace(df['vf'].min(), df['vf'].max(), 10))
 df['m_bins']= np.digitize(df['m'], np.linspace(df['m'].min(), df['m'].max(), 10))
 df['theta_bins']= np.digitize(df['theta'], np.linspace(df['theta'].min(), df['theta'].max(), 10))
 df['v0_bins']= np.digitize(df['v0'], np.linspace(df['v0'].min(), df['v0'].max(), 10))
+df['vf_bins']= np.digitize(df['vf'], np.linspace(df['vf'].min(), df['vf'].max(), 10))
 df['KE_bins']= np.digitize(df['KE'], np.linspace(df['KE'].min(), df['KE'].max(), 10))
 
-# print(df.head(5))
+print(df.head(10))
+
 ##We can print the dataframe and check that the above line has worked
-#print(df['m_bins'].value_counts(normalize=True).sort_index())
+# print(df['m_bins'].value_counts(normalize=True).sort_index())
 m_npbins = df['m_bins'].value_counts(normalize=True).sort_index().to_list()
-# theta_npbins = df['theta_bins'].value_counts(normalize=True).sort_index()
-# v0_npbins = df['v0_bins'].value_counts(normalize=True).sort_index()
+theta_npbins = df['theta_bins'].value_counts(normalize=True).sort_index().to_list()
+v0_npbins = df['v0_bins'].value_counts(normalize=True).sort_index().to_list()
 vf_npbins = df['vf_bins'].value_counts(normalize=True).sort_index().to_list()
-# KE_npbins = df['KE_bins'].value_counts(normalize=True).sort_index()
+KE_npbins = df['KE_bins'].value_counts(normalize=True).sort_index().to_list()
+
+print(KE_npbins)
+
+# def probs(data, child, parent1=None, parent2=None):
+#     if parent1 == None:
+#         # Calculate probabilities
+#         prob = pd.crosstab(data[child], 'Empty', margins=False, normalize='columns').sort_index(
+#         ).to_numpy().reshape(-1).tolist()
+#     elif parent1 != None:
+#         # Check if child node has 1 parent or 2 parents
+#         if parent2 == None:
+#             # Calculate probabilities
+#             prob = pd.crosstab(data[parent1], data[child], margins=False,
+#                                normalize='index').sort_index().to_numpy().reshape(-1).tolist()
+#         else:
+#             # Calculate probabilities
+#             prob = pd.crosstab([data[parent1], data[parent2]], data[child], margins=False,
+#                                normalize='index').sort_index().to_numpy().reshape(-1).tolist()
+#     else:
+#         print("Error in Probability Frequency Calculations")
+#     return prob
+
+m_prob = pd.crosstab(df['m_bins'], 'Empty', margins=False, normalize='columns').sort_index(
+    ).to_numpy().reshape(-1).tolist()
 
 
-def probs(data, child, parent1=None, parent2=None):
-    if parent1 == None:
-        # Calculate probabilities
-        prob = pd.crosstab(data[child], 'Empty', margins=False, normalize='columns').sort_index(
-        ).to_numpy().reshape(-1).tolist()
-    elif parent1 != None:
-        # Check if child node has 1 parent or 2 parents
-        if parent2 == None:
-            # Calculate probabilities
-            prob = pd.crosstab(data[parent1], data[child], margins=False,
+theta_prob = pd.crosstab(df['theta_bins'], 'Empty', margins=False, normalize='columns').sort_index(
+    ).to_numpy().reshape(-1).tolist()
+
+
+v0_prob = pd.crosstab(df['v0_bins'], 'Empty', margins=False, normalize='columns').sort_index(
+    ).to_numpy().reshape(-1).tolist()
+
+
+vf_prob = pd.crosstab([df['theta_bins'], df['v0_bins']], df['vf_bins'], margins=False, dropna=True,
                                normalize='index').sort_index().to_numpy().reshape(-1).tolist()
-        else:
-            # Calculate probabilities
-            prob = pd.crosstab([data[parent1], data[parent2]], data[child], margins=False,
-                               normalize='index').sort_index().to_numpy().reshape(-1).tolist()
-    else:
-        print("Error in Probability Frequency Calculations")
-    return prob
 
-prob = pd.crosstab([df['theta_bins'], df['v0_bins']], df['KE_bins'], margins=False,
+
+KE_prob = pd.crosstab([df['vf_bins'], df['m_bins']], df['KE_bins'], margins=False, dropna=True,
                                normalize='index').sort_index().to_numpy().reshape(-1).tolist()
 
-# print(probs(df, child='m_bins'))
-# print(probs(df, chil='KE_bins', parent1='vf_bins'))
-# print(m_npbins)
+print(KE_prob)
+
 
 ###Create nodes for BBN
-# m = BbnNode(Variable(0, 'm', ['1','2','3','4','5','6','7','8','9','10']),
-#             probs(df, child='m_bins')
-#             )
+m = BbnNode(Variable(0, 'm_bins', ['4']), [m_prob])
 
-theta = BbnNode(Variable(1, 'theta', ['1','2','3','4','5','6','7','8','9','10']),
-            probs(df, child='theta_bins')
-            )
+theta = BbnNode(Variable(1, 'theta_bins', ['1']), [theta_prob])
 
-v0 = BbnNode(Variable(2, 'v0', ['1','2','3','4','5','6','7','8','9','10']),
-            probs(df, child='v0_bins')
-            )
+v0 = BbnNode(Variable(2, 'v0_bins', ['5']), [v0_prob])
 
-vf = BbnNode(Variable(3, 'vf', ['1','2','3','4','5','6','7','8','9','10']),
-            pd.crosstab([df['theta_bins'], df['v0_bins']], df['vf_bins'], margins=False,
-                               normalize='index').sort_index().to_numpy().reshape(-1).tolist()
-            )
+vf = BbnNode(Variable(3, 'vf_bins', ['1','2','5']), [vf_prob])
 
-# KE = BbnNode(Variable(4, 'KE', ['1','2','3','4','5','6','7','8','9','10']),
-#             probs(df, child='KE', parent1='vf', parent2='m')
-#             )            
+KE = BbnNode(Variable(4, 'KE_bins', ['5']), [KE_prob])            
 
 
-###Create network:
+##Create network:
 bbn = Bbn() \
+    .add_node(m) \
     .add_node(theta) \
     .add_node(v0) \
     .add_node(vf) \
+    .add_node(KE) \
     .add_edge(Edge(theta, vf, EdgeType.DIRECTED)) \
     .add_edge(Edge(v0, vf, EdgeType.DIRECTED)) \
+    .add_edge(Edge(vf, KE, EdgeType.DIRECTED)) \
+    .add_edge(Edge(m, KE, EdgeType.DIRECTED))  
+
+# bbn = Bbn() \
+#     .add_node(theta) \
+#     .add_node(v0) \
+#     .add_node(vf) \
+#     .add_edge(Edge(theta, vf, EdgeType.DIRECTED)) \
+#     .add_edge(Edge(v0, vf, EdgeType.DIRECTED))   
     
 
+###Create the BBN to a join tree
+join_tree = InferenceController.apply(bbn)
 
 ###Create function for drawing the graph related to bbn.
 ###Set node positions
@@ -138,8 +157,7 @@ def drawbn(bbn):
     plt.show()
     return plt
 
-###Create the BBN to a join tree
-join_tree = InferenceController.apply(bbn)
+drawbn(bbn)
 
 # Define a function for printing marginal probabilities
 def print_probs():
