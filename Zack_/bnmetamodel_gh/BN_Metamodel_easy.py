@@ -1,7 +1,7 @@
 # from BayesianNetwork import *
 # from BNdata import *
 from Helper_functions import loadDataFromCSV
-
+from Helper_functions import BNskelFromCSV
 import BayesianNetwork
 import BNdata
 

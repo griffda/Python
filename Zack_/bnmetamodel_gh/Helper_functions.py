@@ -46,7 +46,7 @@ def alphanum_key(s):
 def len_csvdata(csv_file_path):
     data = []
 
-    with io.open(csv_file_path, 'rb') as f:
+    with io.open(csv_file_path, 'r') as f:
         reader = csv.reader(f, dialect=csv.excel)
 
         for row in reader:
@@ -58,7 +58,7 @@ def len_csvdata(csv_file_path):
 def loadDataFromCSV (csv_file_path, header=False):
     #TODO: should rewrite this function as loaddataset_kfold and write the kfold code in here and return list of lists of indexes
     dataset = []
-    with open(csv_file_path, 'rb') as csvfile:
+    with open(csv_file_path, 'r') as csvfile:
         lines = csv.reader(csvfile)
 
         for row in lines:
@@ -73,7 +73,7 @@ def loadDataFromCSV (csv_file_path, header=False):
                 item = float(dataset[i][j])
                 row.append(item)
         data.append(row)
-    #print np.array(data).astype(np.float)
+    #print(np.array(data).astype(np.float))
     #print data
     return data
 
