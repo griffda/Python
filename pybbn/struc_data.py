@@ -19,7 +19,8 @@ from pybbn.pptc.inferencecontroller import InferenceController
 import numpy as np
 
 df = pd.read_csv('/Users/tomgriffiths/OneDrive - Imperial College London/Research/Python/gitlibraries/Python/binned_data.csv')
-print(df.head(10))
+
+df = df.applymap(str)
 
 structure = {
     'm_bins':[],
