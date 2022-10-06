@@ -10,11 +10,12 @@ df = pd.read_csv('/Users/tomgriffiths/OneDrive - Imperial College London/Researc
 ##Create new data frame - call it binned and fill with the values and then use structure syntax below. 
 
 labels = [1,2,3,4]
+labels2 = [1,2,3,4,5,6]
 df['m_bins'] = pd.qcut(df['m'], 4, labels=labels)
 df['theta_bins'] = pd.qcut(df['theta'], 4, labels=labels)
 df['v0_bins'] = pd.qcut(df['v0'], 4, labels=labels)
-df['vf_bins'] = pd.qcut(df['vf'], 4, labels=labels)
-df['KE_bins'] = pd.qcut(df['KE'], 4, labels=labels)
+df['vf_bins'] = pd.qcut(df['vf'], 6, labels=labels2)
+df['KE_bins'] = pd.qcut(df['KE'], 6, labels=labels2)
 
 df_binned = df.drop(['m', 'theta','v0', 'vf', 'KE'], axis=1)
 print(df_binned.head(10))
