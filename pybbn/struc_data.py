@@ -11,20 +11,18 @@ BBNs structure is updated:
 - output nodes: vf, KE.
 - Larger data set of 500 rows.
 - Data will use preset bin widths and will test how changing this affects the outputs.
+- posterior probabilities will be calculated.
 """
 
 import pandas as pd
 from pybbn.graph.factory import Factory
 from pybbn.pptc.inferencecontroller import InferenceController
-from create_plot import CreatePlot
 import numpy as np
 
 ###Reading csv file of data
 df = pd.read_csv('/Users/tomgriffiths/OneDrive - Imperial College London/Research/Python/gitlibraries/Python/binned_data.csv')
 ###Pybbn only reads data types as strings, so this line converts the data in the csv from int64 to string 
 df = df.applymap(str)
-
-b=CreatePlot2
 
 ###This is telling us how the network is structured between parent nodes and posteriors. 
 ###Using this method, we avoid having to build our own conditional probability tables using maximum likelihood estimation. 
@@ -42,12 +40,34 @@ bbn = Factory.from_data(structure, df)
 ###this line performs inference on the data 
 join_tree = InferenceController.apply(bbn)
 
+###When building network you can get the names of the nodes using bbn.nodes or something to that affect. 
+
+###Try to fill an empty array with the posteriors and plot them from there. 
+p=[]
+arr = []
 
 ###This tells us the posterior probabilities 
 for node, posteriors in join_tree.get_posteriors().items():
+    ###This is useful to display them as f-strings 
     p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
-    print(f'{node} : {p}')
+    print(p)
+    
+    ###This method passes the key value pairs. 
+    # p = posteriors
+    # df = pd.DataFrame(p.items(), columns = [node, 'Posterior Probability'])
+    # b = df.iloc[:,1].values
+    # c = df.iloc[:,0].values
+    # print(b)
+    # print(c)
 
-evidence = {'m':[1.0,0.0,0,0], 'theta':[1.0,0.0,0,0], 'v0':[1.0,0.0,0,0]}
+    
+    ####This method passes the Series constructor
+    # s = pd.Series(p, name='Posterior Probability')
+    # s.index.name = 'Bins'
+    # s.reset_index()
+    # print(s)
 
-b.plotPDs(b, 'Posteriors', 'Ranges', 'Probabilities', displayplt=True, posteriorPD=posteriors, evidence=evidence.keys())
+    ###This method uses numpy to pass data into an array:
+    # # data = posteriors.items()
+    # # arr = np.array(data)
+    # # print(data)
