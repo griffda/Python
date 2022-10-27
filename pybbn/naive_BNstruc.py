@@ -56,8 +56,8 @@ structure = {
     'm_bins':[],
     'theta_bins': [],
     'v0_bins':[],
-    'vf_bins': ['theta_bins', 'v0_bins'],
-    'KE_bins': ['vf_bins', 'm_bins']
+    'vf_bins': ['theta_bins', 'v0_bins', 'm_bins'],
+    'KE_bins': ['theta_bins', 'v0_bins', 'm_bins']
 }
 
 ###Here we are calling the Factory function from pybbn and applying the above structure and data frame from csv as arguments. 

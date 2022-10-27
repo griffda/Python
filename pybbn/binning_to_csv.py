@@ -20,19 +20,28 @@ def binning_data():
 
     ###This is a more modular approach which uses qcut and a for loop to loop through each of the columns for the nodes
     ###providing bins, and calculating bin edges.
-    for name in df.columns:
+    ###cut command creates equispaced bins but frequency of samples is unequal in each bin - i.e., equidistant binning
+    ###qcut command creates unequal size bins but frequency of samples is equal in each bin - i.e, percentile binning
+
+
+    ###Equidistant binning for the inputs 
+    for name in df.iloc[:,[0,1]]:
+        name_bins = name + '_bins'
+        df[name_bins], bin_edges = pd.cut(df[name], 4, labels=labels, retbins=True)
+        bin_edges_dict[name_bins]=bin_edges
+        
+
+
+    ###Percentile binning for the outputs
+    for name in df.iloc[:,[2,3,4]]:
         name_bins = name + '_bins'
         df[name_bins], bin_edges = pd.qcut(df[name], 4, labels=labels, retbins=True)
         bin_edges_dict[name_bins]=bin_edges
 
-        
-    # df['m_bins'], bin_edges = pd.qcut(df['m'], 4, labels=labels,retbins=True)
-    # df['theta_bins'], bin_edges = pd.qcut(df['theta'], 4, labels=labels,retbins=True)
-    # df['v0_bins'], bin_edges = pd.qcut(df['v0'], 4, labels=labels,retbins=True)
-    # df['vf_bins'], bin_edges = pd.qcut(df['vf'], 6, labels=labels2,retbins=True)
-    # df['KE_bins'], bin_edges = pd.qcut(df['KE'], 6, labels=labels2,retbins=True)
 
     df_binned = df.drop(['m', 'theta', 'v0', 'vf', 'KE'], axis=1)
+    ###This line takes the first two columns of the new df to ensure the inputs get 
+    #df_binned = df.iloc[:,[5,6]]
     print(bin_edges_dict)
     print(bin_edges)
     print(df_binned.head(10))
