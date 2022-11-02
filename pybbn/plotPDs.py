@@ -48,7 +48,7 @@ def BNstructure(df, df_binned, labels):
 
     return join_tree, structure
 
-def plotPDs(maintitle, xlabel, ylabel, displayplt = False): # plots the probability distributions)
+def plotPDs(maintitle, xlabel, ylabel, displayplt = False, **kwargs): # plots the probability distributions)
     
     structure, join_tree = BNstructure(df=[], df_binned=[], labels=[])###These arguments would need to be filled. 
 
