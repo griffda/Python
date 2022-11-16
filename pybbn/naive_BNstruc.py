@@ -32,6 +32,7 @@ labels = [1,2,3,4]
 labels2 = [1,2,3,4,5]
 
 bin_edges_dict = {}
+prior_dict = {}
 
 ###Equidistant binning for the inputs 
 for name in df.iloc[:,[0,1,2]]:
@@ -39,6 +40,13 @@ for name in df.iloc[:,[0,1,2]]:
     df[name_bins], bin_edges = pd.cut(df[name], 4, labels=labels, retbins=True)
     bin_edges_dict[name_bins]=bin_edges
     
+###This is storing the priorPDs so we can plot them
+    name_priors = name + '_priors'
+    prior = df[name_bins].value_counts(normalize=True).sort_index()
+    priorPDs = prior.to_dict()
+    prior_dict[name_priors] = priorPDs
+    #print(prior_dict)
+      
 
 ###Percentile binning for the outputs
 for name in df.iloc[:,[3,4]]:
@@ -46,10 +54,19 @@ for name in df.iloc[:,[3,4]]:
     df[name_bins], bin_edges = pd.qcut(df[name], 4, labels=labels, retbins=True)
     bin_edges_dict[name_bins]=bin_edges
 
+###This is storing the priorPDs so we can plot them
+    name_priors = name + '_priors'
+    prior = df[name_bins].value_counts(normalize=True).sort_index()
+    priorPDs = prior.to_dict()
+    prior_dict[name_priors] = priorPDs
+    #print(prior_dict)
+
 df_binned = df.drop(['m', 'theta','v0', 'vf', 'KE'], axis=1)
+
+
 ###Pybbn only reads data types as strings, so this line converts the data in the csv from int64 to string 
 df_binned = df_binned.applymap(str)
-#print(df_binned.head(10))
+
 
 ###This is telling us how the network is structured between parent nodes and posteriors. 
 ###Using this method, we avoid having to build our own conditional probability tables using maximum likelihood estimation. 
@@ -67,14 +84,13 @@ bbn = Factory.from_data(structure, df_binned)
 ###this line performs inference on the data 
 join_tree = InferenceController.apply(bbn) 
 
-
 ###inserting observation evidence
 ###This is saying that if there is evidence submitted in the arguments for the function to fill evidenceVars with that evidence
 ###e.g., evidence = {'deflection':[1.0, 0.0, 0.0, 0.0, 0.0, 0.0], 'weight':[1.0, 0.0, 0.0, 0.0, 0.0, 0.0] }
 ###where this is a dictionary with a list of bin ranges, setting hard probability of one bin to 100%. 
-#evidenceVars = {'theta_bins':[1.0, 0.0, 0.0, 0.0], 'v0_bins':[1.0, 0.0, 0.0, 0.0],'m_bins':[1.0, 0.0, 0.0, 0.0]}
-evidenceVars = {'m_bins':[1.0, 0.0, 0.0, 0.0]}
-
+#evidenceVars = {'v0_bins':[1.0, 0.0, 0.0, 0.0]}
+#evidenceVars = {'m_bins':[1.0, 0.0, 0.0, 0.0]}
+evidenceVars = {'theta_bins':[1.0, 0.0, 0.0, 0.0]}
 
 ###This inserts observation evidence.
 ###This needs to be plotted as it's own plot and then superimposed onto the marginal probability distributions you already have. 
@@ -85,11 +101,6 @@ for bbn_evid in evidenceVars:
         .build()
     join_tree.set_observation(ev)
 
-
-#if bbn_evid == evidenceVars.keys():
-    # for ydx, x in enumerate(evidenceVars[bbn_evid]):
-    #     bbn_index = ydx
-    #     print(ydx)
 
 ###Try to fill an empty array with the posteriors and plot them from there. 
 p=[]
@@ -112,25 +123,20 @@ edge = np.zeros((len(bin_edges_dict.items()), len(list(bin_edges_dict.items())[:
 binwidths = np.zeros((len(bin_edges_dict.items()), len(list(bin_edges_dict.items())[:-1])))
 xticksv = np.zeros((len(bin_edges_dict.items()), len(list(bin_edges_dict.items())[:-1]))) 
 
-get_posts = join_tree.get_posteriors
-
 ###Loop goes through a dictionary which contains a key and a value
 ###The first variable i.e., node will correspond to the key and the second i.e., posteriors, will correspond to the value. 
-for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
-    #p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
-    #print(posteriors) ###this a dictionary within the list
-    #print(node) ###this is the node name and the key of the list
-    ####make fict ordered for plotting.
-    for i, j in posteriors.items():
-        print(j)
-        for prob in enumerate(j[i]): 
-            print(prob)
 
-    # for val, prob in enumerate(posteriors.items()):
-    #     print(prob)
-    #     for i, j in prob: 
-    #         print(j)
+
+    #print(posteriors) ###this a dictionary within the list
     
+    ####make fict ordered for plotting.
+
+
+###This is to plot the priorPDs that we stored above.
+priorPDs_dict = {}
+
+for var2, idx in prior_dict.items():
+    priorPDs_dict[var2] = list(idx.values())
 
 
 ###This creates a variable that corresponds to key (varname) and another variable which corresponds to the value (index)
@@ -138,6 +144,17 @@ for varName, index in bin_edges_dict.items():
 
     ax = fig.add_subplot(n_rows, n_cols, count+1) ###subplot with three arguments taken from above, including count
     ax.set_facecolor("whitesmoke") ###sets the background colour of subplot
+
+    dataDict = {}
+
+    ###Loop goes through a dictionary which contains a key and a value
+    ##The first variable i.e., node will correspond to the key and the second i.e., posteriors, will correspond to the value.      
+    for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
+        p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
+        #print(posteriors) #So Dict(str,List[float]) and Dict(str,Dict(str,float))
+        #print(node) Can you make the second dict into the same data types as the first
+        dataDict[node] = list(posteriors.values())
+                
 
     for i in range(len(index)-1): ###This for loop find the edges, binwidths and midpoints (xticksv) for each of the bins in the dict
         edge[count, i] = index[i]
@@ -159,8 +176,9 @@ for varName, index in bin_edges_dict.items():
     ###This line plots the bars using xticks on x axis, probabilities on the y and binwidths as bar widths. 
     ###It counts through them for every loop within the outer for loop 
     ###posteriotrs.values() is a dict and therefore not ordered, so need to a way to make it ordered for future use. 
-    ax.bar(xticksv[count], posteriors.values(), align='center', width=binwidths[count], color='black', alpha=0.2, linewidth=0.2)
-    
+    ###This line plots the priorPDs that we stored in the forloop above. 
+    ax.bar(xticksv[count], priorPDs_dict[var2], align='center', width=binwidths[count], color='black', alpha=0.2, linewidth=0.2)
+   
     ###sorting evidence variables to be in the beginning of the list and then plotting evidence if it exists. 
     for key in evidenceVars:
         if varName == key:
@@ -169,7 +187,7 @@ for varName, index in bin_edges_dict.items():
                     bin_index = idx
             ax.bar(xticksv[count][bin_index], evidenceVars[varName][bin_index], align='center', width=binwidths[count][bin_index], color='green', alpha=0.2, linewidth=0.2)
         else: 
-            ax.bar(xticksv[count], posteriors.values(), align='center', width=binwidths[count], color='red', alpha=0.2, linewidth=0.2)    
+            ax.bar(xticksv[count], dataDict[node], align='center', width=binwidths[count], color='red', alpha=0.2, linewidth=0.2)    
 
     ###These lines plot the limits of each axis. 
     plt.xlim(min(edge[count]), max(edge[count]))
@@ -187,4 +205,4 @@ for varName, index in bin_edges_dict.items():
     
 fig.tight_layout()  # Improves appearance a bit.
 fig.subplots_adjust(top=0.85)  # white spacing between plots and title   
-#plt.show()
+plt.show()
