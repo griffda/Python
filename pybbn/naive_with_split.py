@@ -41,8 +41,10 @@ df = pd.read_csv('/Users/tomgriffiths/OneDrive - Imperial College London/Researc
 
 
 ###Step 3 is to split data into training and testing sets. 
-###Here the dada is split 50/50
-x_train, x_test, = train_test_split(df, test_size=0.5)
+###Here the data is split 50/50
+###Target (i.e., y_data are the outputs from the model)
+####x_train, x_test, y_train, y_test = train_test_split(df, *df_outputcols* test_size=0.5)
+x_train, x_test = train_test_split(df, test_size=0.5)
 # print(x_train.head())
 # print(x_test.head())
 
@@ -99,6 +101,7 @@ df_binned = x_train.drop(['m', 'theta','v0', 'vf', 'KE'], axis=1)
 
 ###Pybbn only reads data types as strings, so this line converts the data in the csv from int64 to string 
 df_binned = df_binned.applymap(str)
+print(df_binned.head())
 
 ###Step 5
 ###This is telling us how the network is structured between parent nodes and posteriors. 
@@ -111,16 +114,11 @@ structure = {
     'KE_bins': ['theta_bins', 'v0_bins', 'm_bins']
 }
 ###Step 5
-###Here we are calling the Factory function from pybbn and applying the above structure and data frame from csv as arguments. 
-# bbn = Factory.from_data(structure, df_binned)
-# ###Step 5 
-# ###this line performs inference on the data 
-# join_tree = InferenceController.apply(bbn)
-
-# for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
-#     p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
-#     print(f'{node} : {p}')
-    
+##Here we are calling the Factory function from pybbn and applying the above structure and data frame from csv as arguments. 
+bbn = Factory.from_data(structure, df_binned)
+###Step 5 
+###this line performs inference on the data 
+join_tree = InferenceController.apply(bbn)
 
 """
 <<THESE ARE MARGINALS FROM ABOVE TRAINED NET AT STEP 5: LEARN BAYESIAN NET>>
@@ -131,9 +129,11 @@ vf_bins : 1=0.26479, 2=0.27382, 3=0.22790, 4=0.23349
 KE_bins : 1=0.26979, 2=0.27939, 3=0.20471, 4=0.24611
 """
 
+
+
 ###TESTING: 
 ###Step 4a 
-###Replace all 'df' with 'x_test' to ensure sampling from training data
+###Replace all 'df' with 'x_test' to ensure sampling from testing data
 ###Equidistant binning for the inputs 
 for name in x_test.iloc[:,[0,1,2]]:
     name_bins = name + '_bins'
@@ -148,34 +148,48 @@ for name in x_test.iloc[:,[0,1,2]]:
     prior_dict[name_priors] = priorPDs
     # print(prior_dict.items())
 
-###We are testing for outputs and therefore do not want to use any of the testing data for outputs: 
+###We are testing for outputs and therefore do not want to use any of the training data: 
 df_binned2 = x_test.drop(['m', 'theta','v0', 'vf', 'KE'], axis=1)
-
 
 ###Pybbn only reads data types as strings, so this line converts the data in the csv from int64 to string 
 df_binned2 = df_binned2.applymap(str)
 print(df_binned2.head())
 
-bbn2 = Factory.from_data(structure, df_binned2)
+# bbn2 = Factory.from_data(structure, df_binned2)
 
 # join_tree_test = InferenceController.reapply(join_tree, bbn2)
 
-# ###inserting observation evidence
-# ###This is saying that if there is evidence submitted in the arguments for the function to fill evidenceVars with that evidence
-# ###e.g., evidence = {'deflection':[1.0, 0.0, 0.0, 0.0, 0.0, 0.0], 'weight':[1.0, 0.0, 0.0, 0.0, 0.0, 0.0] }
-# ###where this is a dictionary with a list of bin ranges, setting hard probability of one bin to 100%. 
-# #evidenceVars = {'v0_bins':[1.0, 0.0, 0.0, 0.0]}
-# #evidenceVars = {'m_bins':[1.0, 0.0, 0.0, 0.0]}
-# evidenceVars = {'theta_bins':[1.0, 0.0, 0.0, 0.0]}
+###inserting observation evidence
+###This is saying that if there is evidence submitted in the arguments for the function to fill evidenceVars with that evidence
+###e.g., evidence = {'deflection':[1.0, 0.0, 0.0, 0.0, 0.0, 0.0], 'weight':[1.0, 0.0, 0.0, 0.0, 0.0, 0.0] }
+###where this is a dictionary with a list of bin ranges, setting hard probability of one bin to 100%. 
+#evidenceVars = {'v0_bins':[1.0, 0.0, 0.0, 0.0]}
+evidenceVars = {'m_bins':[1.0, 0.0, 0.0, 0.0]}
 
-# ###This inserts observation evidence.
-# ###This needs to be plotted as it's own plot and then superimposed onto the marginal probability distributions you already have. 
-# for bbn_evid in evidenceVars:
-#     ev = EvidenceBuilder() \
-#         .with_node(join_tree.get_bbn_node_by_name(bbn_evid)) \
-#         .with_evidence('1', 1.0) \
-#         .build()
-#     join_tree.set_observation(ev)
+#evidenceVars = {'theta_bins':[1.0, 0.0, 0.0, 0.0]}
+
+###This inserts observation evidence.
+###This needs to be plotted as it's own plot and then superimposed onto the marginal probability distributions you already have. 
+for bbn_evid in evidenceVars:
+    ev = EvidenceBuilder() \
+        .with_node(join_tree.get_bbn_node_by_name(bbn_evid)) \
+        .with_evidence('1', 1.0) \
+        .build()
+    join_tree.set_observation(ev)
+
+for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
+    p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
+    print(f'{node} : {p}')
+
+"""
+<THESE ARE THE NEW POSTERIORS HAVING SUPPLIED EVIDENCE TO M_BINS>
+m_bins : 1=1.00000, 2=0.00000, 3=0.00000, 4=0.00000
+theta_bins : 1=0.24000, 2=0.25600, 3=0.25200, 4=0.25200
+v0_bins : 1=0.26400, 2=0.23600, 3=0.23600, 4=0.26400
+vf_bins : 1=0.22214, 2=0.22491, 3=0.28971, 4=0.26324
+KE_bins : 1=0.26449, 2=0.41361, 3=0.32190, 4=0.00000
+"""
+ 
 
 # ##This is for the figure parameters. 
 # n_rows = 1
