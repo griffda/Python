@@ -88,6 +88,8 @@ for name in x_train.iloc[:,[3,4]]:
     name_bins = name + '_bins'
     x_train[name_bins], bin_edges = pd.qcut(x_train[name], 4, labels=labels, retbins=True)
     bin_edges_dict[name_bins]=bin_edges
+    # print(bin_edges_dict.items())
+
 
 ###This is storing the priorPDs so we can plot them
     name_priors = name + '_priors'
@@ -101,7 +103,7 @@ df_binned = x_train.drop(['m', 'theta','v0', 'vf', 'KE'], axis=1)
 
 ###Pybbn only reads data types as strings, so this line converts the data in the csv from int64 to string 
 df_binned = df_binned.applymap(str)
-print(df_binned.head())
+# print(df_binned.head())
 
 ###Step 5
 ###This is telling us how the network is structured between parent nodes and posteriors. 
@@ -114,11 +116,11 @@ structure = {
     'KE_bins': ['theta_bins', 'v0_bins', 'm_bins']
 }
 ###Step 5
-##Here we are calling the Factory function from pybbn and applying the above structure and data frame from csv as arguments. 
-bbn = Factory.from_data(structure, df_binned)
-###Step 5 
-###this line performs inference on the data 
-join_tree = InferenceController.apply(bbn)
+# ##Here we are calling the Factory function from pybbn and applying the above structure and data frame from csv as arguments. 
+# bbn = Factory.from_data(structure, df_binned)
+# ###Step 5 
+# ###this line performs inference on the data 
+# join_tree = InferenceController.apply(bbn)
 
 """
 <<THESE ARE MARGINALS FROM ABOVE TRAINED NET AT STEP 5: LEARN BAYESIAN NET>>
@@ -153,7 +155,7 @@ df_binned2 = x_test.drop(['m', 'theta','v0', 'vf', 'KE'], axis=1)
 
 ###Pybbn only reads data types as strings, so this line converts the data in the csv from int64 to string 
 df_binned2 = df_binned2.applymap(str)
-print(df_binned2.head())
+# print(df_binned2.head())
 
 # bbn2 = Factory.from_data(structure, df_binned2)
 
@@ -170,16 +172,16 @@ evidenceVars = {'m_bins':[1.0, 0.0, 0.0, 0.0]}
 
 ###This inserts observation evidence.
 ###This needs to be plotted as it's own plot and then superimposed onto the marginal probability distributions you already have. 
-for bbn_evid in evidenceVars:
-    ev = EvidenceBuilder() \
-        .with_node(join_tree.get_bbn_node_by_name(bbn_evid)) \
-        .with_evidence('1', 1.0) \
-        .build()
-    join_tree.set_observation(ev)
+# for bbn_evid in evidenceVars:
+#     ev = EvidenceBuilder() \
+#         .with_node(join_tree.get_bbn_node_by_name(bbn_evid)) \
+#         .with_evidence('1', 1.0) \
+#         .build()
+#     join_tree.set_observation(ev)
 
-for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
-    p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
-    print(f'{node} : {p}')
+# for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
+#     p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
+#     print(f'{node} : {p}')
 
 """
 <THESE ARE THE NEW POSTERIORS HAVING SUPPLIED EVIDENCE TO M_BINS>
@@ -191,22 +193,30 @@ KE_bins : 1=0.26449, 2=0.41361, 3=0.32190, 4=0.00000
 """
  
 
-# ##This is for the figure parameters. 
-# n_rows = 1
-# n_cols = len(structure.keys()) ##the length of the BN i.e., five nodes
+##This is for the figure parameters. 
+n_rows = 1
+n_cols = len(structure.keys()) ##the length of the BN i.e., five nodes
 
-# ###instantiate a figure as a placaholder for each distribution (axes)
-# fig = plt.figure(figsize=((200 * n_cols) / 96, (200 * n_rows) / 96), dpi=96, facecolor='white')
-# fig.suptitle('Posterior Probabilities', fontsize=8) # title
+###instantiate a figure as a placaholder for each distribution (axes)
+fig = plt.figure(figsize=((200 * n_cols) / 96, (200 * n_rows) / 96), dpi=96, facecolor='white')
+fig.suptitle('Posterior Probabilities', fontsize=8) # title
 
-# ###Instantiate a counter
-# i = 0
-# count = 0
+###Instantiate a counter
+i = 0
+count = 0
 
-# ###Creating an array of zeros that will be filled with values when going through the dictionary loop below
-# edge = np.zeros((len(bin_edges_dict.items()), len(list(bin_edges_dict.items())[:-1])))
-# binwidths = np.zeros((len(bin_edges_dict.items()), len(list(bin_edges_dict.items())[:-1])))
-# xticksv = np.zeros((len(bin_edges_dict.items()), len(list(bin_edges_dict.items())[:-1]))) 
+print(bin_edges_dict.items())
+print(len(bin_edges_dict.items()))
+
+
+###Creating an array of zeros that will be filled with values when going through the dictionary loop below
+edge = np.zeros((len(bin_edges_dict.items()), len(list(bin_edges_dict.items())[:-1])))
+binwidths = np.zeros((len(bin_edges_dict.items()), len(list(bin_edges_dict.items())[:-1])))
+xticksv = np.zeros((len(bin_edges_dict.items()), len(list(bin_edges_dict.items())[:-1]))) 
+
+print(edge)
+# print(binwidths)
+# print(xticksv)
 
 # ###Loop goes through a dictionary which contains a key and a value
 # ###The first variable i.e., node will correspond to the key and the second i.e., posteriors, will correspond to the value. 
@@ -217,34 +227,43 @@ KE_bins : 1=0.26449, 2=0.41361, 3=0.32190, 4=0.00000
 #     ####make fict ordered for plotting.
 
 
-# ###This is to plot the priorPDs that we stored above.
-# priorPDs_dict = {}
+###This is to plot the priorPDs that we stored above.
+priorPDs_dict = {}
 
-# for var2, idx in prior_dict.items():
-#     priorPDs_dict[var2] = list(idx.values())
+for var2, idx in prior_dict.items():
+    priorPDs_dict[var2] = list(idx.values())
 
 
-# ###This creates a variable that corresponds to key (varname) and another variable which corresponds to the value (index)
-# for varName, index in bin_edges_dict.items():
+###This creates a variable that corresponds to key (varname) and another variable which corresponds to the value (index)
+for varName, index in bin_edges_dict.items():
 
-#     ax = fig.add_subplot(n_rows, n_cols, count+1) ###subplot with three arguments taken from above, including count
-#     ax.set_facecolor("whitesmoke") ###sets the background colour of subplot
+    ax = fig.add_subplot(n_rows, n_cols, count+1) ###subplot with three arguments taken from above, including count
+    ax.set_facecolor("whitesmoke") ###sets the background colour of subplot
 
-#     dataDict = {}
+    dataDict = {}
 
-#     ###Loop goes through a dictionary which contains a key and a value
-#     ##The first variable i.e., node will correspond to the key and the second i.e., posteriors, will correspond to the value.      
-#     for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
-#         p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
-#         #print(posteriors) #So Dict(str,List[float]) and Dict(str,Dict(str,float))
-#         #print(node) Can you make the second dict into the same data types as the first
-#         dataDict[node] = list(posteriors.values())
+    # print(varName)
+    # print(index)
+    # print(bin_edges_dict.items())
+
+    ###Loop goes through a dictionary which contains a key and a value
+    ##The first variable i.e., node will correspond to the key and the second i.e., posteriors, will correspond to the value.      
+    # for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
+    #     p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
+    #     #print(posteriors) #So Dict(str,List[float]) and Dict(str,Dict(str,float))
+    #     #print(node) Can you make the second dict into the same data types as the first
+    #     dataDict[node] = list(posteriors.values())
                 
 
-#     for i in range(len(index)-1): ###This for loop find the edges, binwidths and midpoints (xticksv) for each of the bins in the dict
-#         edge[count, i] = index[i]
-#         binwidths[count, i] = (index[i+1] - index[i])
-#         xticksv[count,i]  = ((index[i+1] - index[i]) / 2.) + index[i]
+    for i in range(len(index)-1): ###This for loop find the edges, binwidths and midpoints (xticksv) for each of the bins in the dict
+        # print(i)
+        # print(index)
+        
+        edge[count, i] = index[i]
+        binwidths[count, i] = (index[i+1] - index[i])
+        xticksv[count,i]  = ((index[i+1] - index[i]) / 2.) + index[i]
+
+        
 
 #     ###this is saying: if there is posteriorPD in the arguments then also ask if there is evidence. 
 #     ###if there is evidence, then plot the posteriorPD as green superimposed on the orginial plot. 
@@ -286,8 +305,13 @@ KE_bins : 1=0.26449, 2=0.41361, 3=0.32190, 4=0.00000
 #     ax.set_ylabel('Probabilities', fontsize=7)  # Y label
 #     ax.set_xlabel('Ranges', fontsize=7)  # X label
 
-#     count+=1
-    
+    count+=1
+
+print(edge)
+print(binwidths)
+print(xticksv)    
+
+
 # fig.tight_layout()  # Improves appearance a bit.
 # fig.subplots_adjust(top=0.85)  # white spacing between plots and title   
 # plt.show()
