@@ -179,18 +179,18 @@ structure = {
 
 ##Step 5
 ##Here we are calling the Factory function from pybbn and applying the above structure and data frame from csv as arguments. 
-# bbn = Factory.from_data(structure, df_binned_xy)
+bbn = Factory.from_data(structure, df_binned_xy)
 ##Step 5 
 ##this line performs inference on the data 
-# join_tree = InferenceController.apply(bbn)
+join_tree = InferenceController.apply(bbn)
 
-# ##Write a function for adding evidence:
-# def evidence(nod, bin_index, val):
-#     ev = EvidenceBuilder() \
-#     .with_node(join_tree.get_bbn_node_by_name(nod)) \
-#     .with_evidence(bin_index, val) \
-#     .build()
-#     return ev
+##Write a function for adding evidence:
+def evidence(nod, bin_index, val):
+    ev = EvidenceBuilder() \
+    .with_node(join_tree.get_bbn_node_by_name(nod)) \
+    .with_evidence(bin_index, val) \
+    .build()
+    return ev
 
 """
 <<THESE ARE MARGINALS FROM ABOVE TRAINED NET AT STEP 5: LEARN BAYESIAN NET>>
@@ -247,18 +247,18 @@ df_test_xy = df_test_xy.applymap(str)
 # print(df_test_xy.head())
 
 
-##inserting observation evidence
-##This is saying that if there is evidence submitted in the arguments for the function to fill evidenceVars with that evidence
-##e.g., evidence = {'deflection':[1.0, 0.0, 0.0, 0.0, 0.0, 0.0], 'weight':[1.0, 0.0, 0.0, 0.0, 0.0, 0.0] }
-# for col in df_test_x: ###col is the column header i.e., nod in the function.
-#     for node in df_test_x[col]: ###node is the value from the input column i.e., the bin indeX
-#         ev = evidence(col, node, 1.0) ###we want to apply hard evidence (100% prob) to the first bin, BUT THIS ISN'T SELECTING THE FIRST BIN, MENTION TO ZACK. 
-#         join_tree.set_observation(ev)
+#inserting observation evidence
+#This is saying that if there is evidence submitted in the arguments for the function to fill evidenceVars with that evidence
+#e.g., evidence = {'deflection':[1.0, 0.0, 0.0, 0.0, 0.0, 0.0], 'weight':[1.0, 0.0, 0.0, 0.0, 0.0, 0.0] }
+for col in df_test_x: ###col is the column header i.e., nod in the function.
+    for node in df_test_x[col]: ###node is the value from the input column i.e., the bin indeX
+        ev = evidence(col, node, 1.0) ###we want to apply hard evidence (100% prob) to the first bin, BUT THIS ISN'T SELECTING THE FIRST BIN, MENTION TO ZACK. 
+        join_tree.set_observation(ev)
 
 
-# for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
-#     p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
-#     print(f'{node} : {p}')
+for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
+    p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
+    print(f'{node} : {p}')
 
  
 """

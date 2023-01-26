@@ -21,6 +21,9 @@ BBNs structure is updated:
     1a (select design ranges), 
     1b (generate input samples), 
     1c (run analytical model i.e., f=ma) 
+
+
+--THIS SCRIPT SHOULD FIX THE ISSUE OF PLOTTING -1 NUMBER OF BINS USED
 """
 import pandas as pd
 import inspect
@@ -55,9 +58,13 @@ x_train, x_test, y_train, y_test = train_test_split(x_df, y_df, test_size=0.5)
 # x_train, x_test = train_test_split(df, test_size=0.5)
 
 ###Bin labels: 
-labels = [1,2,3]
+# labels = [1,2,3]
+# labels = [1,2,3,4]
+labels = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
 # labels = [1,2,3,4,5,6,7,8,9,10]
 labels2 = [1,2,3,4,5,6,7,8]
+
+number_of_bins = 18
 
 ###Empty dicts to fill 
 bin_edges_dict = {}
@@ -69,7 +76,7 @@ prior_dict = {}
 ###Equidistant binning for the inputs 
 for name in x_train:
     name_bins = name + '_bins'
-    x_train[name_bins], bin_edges = pd.cut(x_train[name], 3, labels=labels, retbins=True)
+    x_train[name_bins], bin_edges = pd.cut(x_train[name], number_of_bins, labels=labels, retbins=True)
     bin_edges_dict[name_bins]=bin_edges
     # print(bin_edges_dict.items())
     
@@ -84,7 +91,7 @@ for name in x_train:
 ###Step 4b
 for name in y_train:
     name_bins = name + '_bins'
-    y_train[name_bins], bin_edges = pd.qcut(y_train[name], 3, labels=labels, retbins=True)
+    y_train[name_bins], bin_edges = pd.qcut(y_train[name], number_of_bins, labels=labels, retbins=True)
     # y_train[name_bins], bin_edges = pd.cut(y_train[name], 4, labels=labels, retbins=True)
     bin_edges_dict[name_bins]=bin_edges
     # for i in range(len(y_train[name]-1)):
@@ -148,7 +155,7 @@ mass_bins : 1=0.20400, 2=0.66000, 3=0.13600
 # ###Equidistant binning for the inputs 
 for name in x_test:
     name_bins = name + '_bins'
-    x_test[name_bins], bin_edges = pd.cut(x_test[name], 3, labels=labels, retbins=True)
+    x_test[name_bins], bin_edges = pd.cut(x_test[name], number_of_bins, labels=labels, retbins=True)
     bin_edges_dict[name_bins]=bin_edges
     # print(bin_edges_dict.items())
     
@@ -164,7 +171,7 @@ for name in x_test:
 ###Step 4b
 for name in y_test:
     name_bins = name + '_bins'
-    y_test[name_bins], bin_edges = pd.qcut(y_test[name], 3, labels=labels, retbins=True)
+    y_test[name_bins], bin_edges = pd.qcut(y_test[name], number_of_bins, labels=labels, retbins=True)
     bin_edges_dict[name_bins]=bin_edges
 
 ###This is storing the priorPDs so we can plot them
@@ -191,8 +198,9 @@ df_test_xy = df_test_xy.applymap(str)
 ###This is saying that if there is evidence submitted in the arguments for the function to fill evidenceVars with that evidence
 ###e.g., evidence = {'deflection':[1.0, 0.0, 0.0, 0.0, 0.0, 0.0], 'weight':[1.0, 0.0, 0.0, 0.0, 0.0, 0.0] }
 ev_dict = {}
+
 for col in df_test_x: ###col is the column header i.e., nod in the function.
-    ev_dict = {'nod':col, 'bin_index':'1', 'val': 1.0}
+    ev_dict = {'nod':col, 'bin_index':'15', 'val': 1.0}
     # ev = evidence(col, '2', 1.0) ###we want to apply hard evidence (100% prob) to the first bin, BUT THIS ISN'T SELECTING THE FIRST BIN, MENTION TO ZACK. 
     ev = evidence(**ev_dict)
     join_tree.set_observation(ev)
@@ -231,17 +239,22 @@ for var2, idx in prior_dict.items():
 for varName, index in bin_edges_dict.items(): 
     ax = fig.add_subplot(n_rows, n_cols, count+1) ###subplot with three arguments taken from above, including count
     ax.set_facecolor("whitesmoke") ###sets the background colour of subplot
-    print(index)
-    edge = np.zeros((len(bin_edges_dict.items()), len(index[:-1])))
+    # print(index)
+
+    edge = np.zeros((len(bin_edges_dict.items()), len(index[:])))
     binwidths = np.zeros((len(bin_edges_dict.items()), len(index[:-1])))
     xticksv = np.zeros((len(bin_edges_dict.items()), len(index[:-1])))
 
-    ev2 = list(ev_dict.values())       
+    ev2 = list(ev_dict.values()) 
+
+    for i in range(len(index)): ###This for loop find the edges, binwidths and midpoints (xticksv) for each of the bins in the dict      
+        edge[count, i] = index[i]       
                 
     for i in range(len(index)-1): ###This for loop find the edges, binwidths and midpoints (xticksv) for each of the bins in the dict      
-        edge[count, i] = index[i]
         binwidths[count, i] = (index[i+1] - index[i])
         xticksv[count,i]  = ((index[i+1] - index[i]) / 2.) + index[i]
+
+           
 
     ###This line plots the bars using xticks on x axis, probabilities on the y and binwidths as bar widths. 
     ###It counts through them for every loop within the outer for loop 
@@ -263,7 +276,8 @@ for varName, index in bin_edges_dict.items():
             if varName == 'acceleration_bins':
                 ax.bar(xticksv[count], dataDict[node], align='center', width=binwidths[count], color='red', alpha=0.2, linewidth=0.2)         
             elif varName == 'mass_bins' or 'force_bins':
-                ax.bar(xticksv[count][0], ev2[2], align='center', width=binwidths[count][0], color='green', alpha=0.2, linewidth=0.2)
+
+                ax.bar(xticksv[count], dataDict[node], align='center', width=binwidths[count], color='green', alpha=0.2, linewidth=0.2)
                 
     ###These lines plot the limits of each axis. 
     plt.xlim(min(edge[count]), max(edge[count]))
@@ -278,6 +292,10 @@ for varName, index in bin_edges_dict.items():
     ax.set_xlabel('Ranges', fontsize=7)  # X label
     i+=1
     count+=1
+
+# print(edge)
+# print(binwidths)
+# print(xticksv)
     
 fig.tight_layout()  # Improves appearance a bit.
 fig.subplots_adjust(top=0.85)  # white spacing between plots and title   
