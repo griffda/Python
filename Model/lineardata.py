@@ -11,7 +11,7 @@ def make_data(n):
     mass = lhs(1, samples=(n))
     sample_masses = norm(loc=5, scale=0.2).ppf(mass)
     
-    ###generating one column of n samples for mass around value of 5 with SD of 0.2
+    ###generating one column of n samples for force around value of 10 with SD of 0.2
     force = lhs(1, samples=(n))
     sample_force = norm(loc=10, scale=0.2).ppf(force) 
 

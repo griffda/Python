@@ -7,7 +7,7 @@ df = pd.read_csv('/Users/tomgriffiths/OneDrive - Imperial College London/Researc
                     encoding=('utf-8')
                     )
 
-def binning_data(): 
+def binning_data(df): 
     
     ##Create new data frame - call it binned and fill with the values and then use structure syntax below. 
 

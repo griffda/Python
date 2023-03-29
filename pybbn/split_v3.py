@@ -58,13 +58,13 @@ x_train, x_test, y_train, y_test = train_test_split(x_df, y_df, test_size=0.5)
 # x_train, x_test = train_test_split(df, test_size=0.5)
 
 ###Bin labels: 
-# labels = [1,2,3]
+labels = [1,2,3]
 # labels = [1,2,3,4]
-labels = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
+# labels = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
 # labels = [1,2,3,4,5,6,7,8,9,10]
-labels2 = [1,2,3,4,5,6,7,8]
+# labels2 = [1,2,3,4,5,6,7,8]
 
-number_of_bins = 18
+number_of_bins = 3
 
 ###Empty dicts to fill 
 bin_edges_dict = {}
@@ -95,7 +95,7 @@ for name in y_train:
     # y_train[name_bins], bin_edges = pd.cut(y_train[name], 4, labels=labels, retbins=True)
     bin_edges_dict[name_bins]=bin_edges
     # for i in range(len(y_train[name]-1)):
-    # print(bin_edges_dict.items())
+    print(bin_edges_dict.items())
     
 
 ###This is storing the priorPDs so we can plot them
@@ -103,7 +103,7 @@ for name in y_train:
     prior = y_train[name_bins].value_counts(normalize=True).sort_index()
     priorPDs = prior.to_dict()
     prior_dict[name_priors] = priorPDs
-    # print(prior_dict)
+    print(prior_dict)
 
 
 ###Must join x_train and y_train and pass to the BN:
@@ -200,7 +200,7 @@ df_test_xy = df_test_xy.applymap(str)
 ev_dict = {}
 
 for col in df_test_x: ###col is the column header i.e., nod in the function.
-    ev_dict = {'nod':col, 'bin_index':'15', 'val': 1.0}
+    ev_dict = {'nod':col, 'bin_index':'1', 'val': 1.0}
     # ev = evidence(col, '2', 1.0) ###we want to apply hard evidence (100% prob) to the first bin, BUT THIS ISN'T SELECTING THE FIRST BIN, MENTION TO ZACK. 
     ev = evidence(**ev_dict)
     join_tree.set_observation(ev)
@@ -299,4 +299,4 @@ for varName, index in bin_edges_dict.items():
     
 fig.tight_layout()  # Improves appearance a bit.
 fig.subplots_adjust(top=0.85)  # white spacing between plots and title   
-plt.show()
+# plt.show()
