@@ -206,9 +206,9 @@ for col in df_test_x: ###col is the column header i.e., nod in the function.
     join_tree.set_observation(ev)
     # print(ev_dict)
 
-# for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
-#     p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
-#     # print(f'{node} : {p}')
+for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
+    p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
+    print(f'{node} : {p}')
 
 """
 <<THESE ARE THE NEW POSTERIORS HAVING SUPPLIED EVIDENCE TO FORCE and MASS>>

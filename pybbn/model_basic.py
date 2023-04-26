@@ -9,12 +9,9 @@ for f = ma linear model.
 In this script we will attempy to perform cross validation of the BN model: 
 - train several models on different subsets of training data
 - evaluate them on the complementary subset of testing data. 
-- Use cross validation to detect overfitting i.e., failing to generalise a pattern.
-- k-fold validation. 
 
-Root Mean Squared Error:
-- our output values i.e., y_pred are probability distributions and not hard values. 
-- try using posterior probabilities before and after applying evidence. 
+This re-runs the model every time the run button is used and therefore creates diffeent output
+probability distributions. 
 
 """
 import pandas as pd
@@ -37,8 +34,6 @@ df = pd.read_csv('/Users/tomgriffiths/OneDrive - Imperial College London/Researc
                  usecols=['mass', 'force','acceleration'],
                  encoding=('utf-8')
                  )
-
-print(len(df))
 
 ###This is getting the input data from the model
 x_df = df.iloc[:,[0,1]]
@@ -93,9 +88,6 @@ for name in x_train:
     # priorLS[extreme_values_mask] = priorPDsLS[extreme_values_mask]
     # print(prior_dict_xytrnLS.items())
 
-
-    
-
       
 ###Percentile binning for the outputs
 ###Step 4b
@@ -127,7 +119,7 @@ for name in y_train:
 df_binned = x_train.drop(['force', 'mass'], axis=1)
 df_binned_y = y_train.drop(['acceleration'], axis=1)
 df_binned_xy = pd.concat([df_binned, df_binned_y], axis=1)
-print(df_binned_xy.head())
+# print(df_binned_xy.head())
 # print(df_binned_xy.eq(0).any())
 
 ###Pybbn only reads data types as strings, so this line converts the data in the csv from int64 to string 
@@ -158,10 +150,10 @@ def prob_dists(structure, data):
     return join_tree
 
 join_tree = prob_dists(structure, df_binned_xy) ###Use the function:
-for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
-    p_no_ev = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
-    print(f'{node} : {p_no_ev}')
-    with open('xy_train_priors.pkl', 'wb') as f: pickle.dump(join_tree.get_posteriors(), f)
+# for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
+#     p_no_ev = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
+#     print(f'{node} : {p_no_ev}')
+#     with open('xy_train_priors.pkl', 'wb') as f: pickle.dump(join_tree.get_posteriors(), f)
 
 ##Write a function for adding evidence:
 def evidence(nod, bin_index, val):
@@ -185,12 +177,15 @@ mass_bins : 1=0.07200, 2=0.35600, 3=0.41600, 4=0.15600
 ###Equidistant binning for the inputs 
 
 prior_dict_ytst = {}
-bin_edges_dict_test = {}
+bin_edges_dict_xtest = {}
+bin_edges_dict_ytest = {}
+
+testingData_x = {} 
 
 for name in x_test:
     name_bins_xtst = name + '_bins'
     x_test[name_bins_xtst], bin_edges = pd.cut(x_test[name], number_of_bins, labels=labels, retbins=True)
-    bin_edges_dict_test[name_bins_xtst]=bin_edges
+    bin_edges_dict_xtest[name_bins_xtst]=bin_edges
     
     
 ###This is storing the priorPDs so we can plot them
@@ -198,25 +193,34 @@ for name in x_test:
     prior = x_test[name_bins_xtst].value_counts(normalize=True).sort_index()
     priorPDs = prior.to_dict()
     prior_dict_ytst[name_priors] = priorPDs
-    # print(prior_dict_ytst.items()) ###this contains same data that is outputted 
-    
+    testingData_x[name] = list(priorPDs.values())##this line converts testing data into format required for generate errors function.
+    # print(prior_dict_ytst.items()) ###this contains same data that is outputted
+    with open('x_test_bins.pkl', 'wb') as f: pickle.dump(bin_edges_dict_xtest, f) 
+    with open('y_testing_probs2.pkl', 'wb') as f: pickle.dump(testingData_x[name], f)
+
+
+testingData_y = {}    
 
 ###Percentile binning for the outputs
 ###Step 4b
 for name in y_test:
     name_bins_ytst = name + '_bins'
     y_test[name_bins_ytst], bin_edges = pd.qcut(y_test[name], number_of_bins, labels=labels, retbins=True)
-    bin_edges_dict_test[name_bins_ytst]=bin_edges
-    # print(bin_edges_dict.items())
+    bin_edges_dict_ytest[name_bins_ytst]=bin_edges
+    print(bin_edges_dict_ytest.items())
     # print(bin_edges_dict_test[name_bins_ytst])
-    with open('y_test_bins.pkl', 'wb') as f: pickle.dump(bin_edges_dict_test, f)
+    with open('y_test_bins.pkl', 'wb') as f: pickle.dump(bin_edges_dict_ytest, f)
 
 ###This is storing the priorPDs so we can plot them
     name_priors = name + '_test_priors'
     prior = y_test[name_bins_ytst].value_counts(normalize=True).sort_index()
     priorPDs = prior.to_dict()
     prior_dict_ytst[name_priors] = priorPDs
+    testingData_y[name] = list(priorPDs.values()) ##this line converts testing data into format required for generate errors function. 
+    # print(testingData_y)
     with open('y_testing_probs.pkl', 'wb') as f: pickle.dump(prior_dict_ytst[name_priors], f)
+    with open('y_testing_probs2.pkl', 'wb') as f: pickle.dump(testingData_y[name], f)
+
 
     # print(prior_dict_ytst.items())
 
@@ -238,141 +242,164 @@ df_test_xy = df_test_xy.applymap(str)
 ev_dict = {}
 dataDict = {}
 
-for col in df_test_x: ###col is the column header i.e., nod in the function.
-    ev_dict = {'nod':col, 'bin_index':'5', 'val': 1.0}
-    # ev = evidence(col, '2', 1.0) ###we want to apply hard evidence (100% prob) to the first bin, BUT THIS ISN'T SELECTING THE FIRST BIN, MENTION TO ZACK. 
-    ev = evidence(**ev_dict)
-    join_tree.set_observation(ev)
+# for col in df_test_x: ###col is the column header i.e., nod in the function.
+#     ev_dict = {'nod':col, 'bin_index':'5', 'val': 1.0}
+#     # ev = evidence(col, '2', 1.0) ###we want to apply hard evidence (100% prob) to the first bin, BUT THIS ISN'T SELECTING THE FIRST BIN, MENTION TO ZACK. 
+#     ev = evidence(**ev_dict)
+#     join_tree.set_observation(ev)
 #     # print(ev_dict)
 
-for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
-    p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
-    print(f'{node} : {p}')
-    print(join_tree.get_posteriors().items())
-    with open('posteriors_evidence.pkl', 'wb') as f: pickle.dump(join_tree.get_posteriors(), f)
+# def set_observations2(df_input, obs_dict, default_bin=5):
+#     ev_list = []
+#     bin_indices = {}
+#     for col in df_input.columns:
+#         if col in obs_dict:
+#             bin_index = obs_dict[col]['bin_index']
+#             val = obs_dict[col]['val']
+#             bin_indices[col] = bin_index
+#         else:
+#             bin_index = str(default_bin)
+#             val = 1.0
+#             bin_indices[col] = bin_index
+#         ev_dict = {'nod':col, 'bin_index':bin_index, 'val': val}
+#         ev_list.append(ev_dict)
+#     df_output = df_input.copy()
+#     df_output['bin_index'] = df_output.columns.map(bin_indices)
+#     return ev_list, df_output
+
+def generate_obs_dict(test_df):
+    # choose a random row from the test_df
+    row = test_df.sample()
+    print("Selected row index:", row.index[0])
+    
+    # generate an obs_dict from the chosen row
+    obs_dict = {}
+    for col in test_df.columns:
+        bin_index = str(row[col].values[0])
+        obs_dict[col] = {'bin_index': bin_index, 'val': 1.0}
+        
+    print("Observation dictionary:", obs_dict)
+    return obs_dict
+
+
+obs_dict = generate_obs_dict(df_test_xy)
+
+def set_observations(df, obs_dict, default_bin=5):
+    ev_list = []
+    for col in df.columns:
+        if col in obs_dict:
+            bin_index = obs_dict[col]['bin_index']
+            val = obs_dict[col]['val']
+        else:
+            bin_index = str(default_bin)
+            val = 1.0
+        ev_dict = {'nod':col, 'bin_index':bin_index, 'val': val}
+        ev_list.append(ev_dict)
+    return ev_list
+
+# obs_dict = {'mass_bins': {'bin_index': '1', 'val': 1.0},
+#             'force_bins': {'bin_index': '3', 'val': 1.0},}
+
+set_observations(df_test_x, obs_dict, default_bin=5)
+
+
+# ev_list, obs_list, df_test_y_bin = set_observations2(df_test_y, obs_dict)
+
+ev_list = set_observations(df_test_x, obs_dict)
+
+for ev_dict in ev_list:
+    ev = evidence(**ev_dict)
+    join_tree.set_observation(ev)
+    
+# for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
+#     p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
+#     print(f'{node} : {p}')
+#     # print(join_tree.get_posteriors().items())bin_edges_dict_test
+#     with open('posteriors_evidence.pkl', 'wb') as f: pickle.dump(join_tree.get_posteriors(), f)
     
 #   dataDict[node] = list(posteriors.values())
     # print(dataDict[node])
 
+# obs_posteriors = {}
 
-"""
-CROSS VALIDATION METHODS:
-- RMSE USING MEAN OF PREDICTED BIN:
-"""
+# for node, posteriors in join_tree.get_posteriors().items():
+#     obs = node[:-5]  # remove the "_bins" suffix from the node name to get the observation name
+#     obs_posteriors[obs] = [posteriors[val] for val in sorted(posteriors)]  # sort the posteriors by value and add them to the dictionary
 
-"""MY VERSIONS BELOW"""
+# print(obs_posteriors)
 
-# def expectedValue(dict, probabilities):
-#     expectedV = 0.0
-#     for varName, bin_ranges in dict: 
-#         v_max = bin_ranges[0]
-#         v_min = bin_ranges[1]
-#         mean_bin_value = ((v_max - v_min) / 2) + v_min
-#         expectedV += mean_bin_value * probabilities[varName]
-#     return expectedV
+# target_variables = ['acceleration']  # specify the target variable names
 
-# expectedV = expectedValue(bin_edges_dict.items(), dataDict[node][0])
-# print(expectedV)
+# predictedTargetPosteriors = []
 
-# def errors(pred_posteriors, testing_data, index, target):
-#     posteriorPDmean = []
-#     for posterior in pred_posteriors:
-#         posteriorPDmean.append(expectedValue(index[target], posterior))
-#     mse = mean_squared_error(testing_data[target], posteriorPDmean)
-#     rmse = sqrt(mse)
-#     return mse
+# for node, posteriors in join_tree.get_posteriors().items():
+#     obs = node[:-5]  # remove the "_bins" suffix from the node name to get the observation name
+#     if obs in target_variables:  # check if the observation corresponds to a target variable
+#         predictedTargetPosteriors.append([posteriors[val] for val in sorted(posteriors)])  # sort the posteriors by value and add them to the list
 
-# mse = errors(dataDict[node], bin_edges_dict_test, bin_edges_dict, varName)
+# print(predictedTargetPosteriors)
 
-expectedV = 0.0
-count = 0
+# def get_obs_and_pred_posteriors(join_tree, target_variable):
+#     obs_posteriors = {}
 
-# for varName, index in bin_edges_dict_test.items():  
-#     print(bin_edges_dict_test.items())
-#     if varName == 'acceleration_bins':
-#         mean_bin_value = np.zeros((len(bin_edges_dict.items()), len(index[:-1])))
-#         print(varName)
-#         print(index)
-#         print(dataDict[node])
-#         v_max = index[i][0]
-        
-#         v_min = index[i][1]
+#     for node, posteriors in join_tree.get_posteriors().items():
+#         obs = node[:-5]  # remove the "_bins" suffix from the node name to get the observation name
+#         obs_posteriors[obs] = [posteriors[val] for val in sorted(posteriors)]  # sort the posteriors by value and add them to the dictionary
 
-#         for i in range(len(index)-1): ###This for loop find the edges, binwidths and midpoints (xticksv) for each of the bins in the dict      
-#             mean_bin_value[count,i] = ((v_max[i+1] - v_min[i]) / 2.) + v_min[i]
+#     print("Observation posteriors:", obs_posteriors)
 
+#     predictedTargetPosteriors = []
 
-#         # mean_bin_value = ((v_max - v_min) / 2) + v_min ###i.e., the middle of the bin!
+#     for node, posteriors in join_tree.get_posteriors().items():
+#         obs = node[:-5]  # remove the "_bins" suffix from the node name to get the observation name
+#         if obs == target_variable:  # check if the observation corresponds to the specified target variable
+#             predictedTargetPosteriors.append([posteriors[val] for val in sorted(posteriors)])  # sort the posteriors by value and add them to the list
+
+#     print("Predicted target posteriors:", predictedTargetPosteriors)
+#     return predictedTargetPosteriors, obs_posteriors
+
+def get_obs_and_pred_posteriors(join_tree, target_variable):
+    obs_posteriors = {}
+
+    for node, posteriors in join_tree.get_posteriors().items():
+        obs = node[:-5]  # remove the "_bins" suffix from the node name to get the observation name
+        obs_posteriors[obs] = [posteriors[val] for val in sorted(posteriors)]  # sort the posteriors by value and add them to the dictionary
+
+    predictedTargetPosteriors = []
+
+    for node, posteriors in join_tree.get_posteriors().items():
+        obs = node[:-5]  # remove the "_bins" suffix from the node name to get the observation name
+        if obs == target_variable:  # check if the observation corresponds to the specified target variable
+            predictedTargetPosteriors.append([posteriors[val] for val in sorted(posteriors)])  # sort the posteriors by value and add them to the list
+
+    print("Predicted target posteriors:", predictedTargetPosteriors)
+    return predictedTargetPosteriors, obs_posteriors
+
     
-#         expectedV += mean_bin_value * dataDict[node][0] ###this 
-#         print(v_max)
-#         print(v_min)
-#         print(mean_bin_value)
-#         print(expectedV) 
-
-#         posteriorPDmean = []
-
-#         for posterior in dataDict[node]:
-#             print(posterior)
-#             posteriorPDmean.append(expectedV)
-#             print(posteriorPDmean)
-#             mse = mean_squared_error(bin_edges_dict_test[varName], posteriorPDmean)
-#             print(mse)
-#             rmse = sqrt(mse)
-#             print()
+predictedTargetPosteriors, obs_posteriors = get_obs_and_pred_posteriors(join_tree, "acceleration")
+print("Observation posteriors:", obs_posteriors)
 
 
-###index = this is the list of bin edges from the bin edges.dict 
-###pred_posteriors = this is the output probability distribution
-###test and see if probabilities = pred_posteriors
-###probabilities = datadict[node] for plotting
-###target = acceleration_bins i.e., varName? 
-
-"""ZACK'S VERSIONS BELOW"""
-
-# def expectedValue(bin_ranges, probabilities):
-#     expectedV = 0.0
-#     for index, bin_range in enumerate(bin_ranges):
-
-#         v_max = bin_range[0]
-#         v_min = bin_range[1]
-
-#         mean_bin_value = ((v_max - v_min / 2) + v_min)
-
-#         expectedV += mean_bin_value * probabilities[index]
-
-#     return expectedV    
-
-# def errors(pred_posteriors, testing_data, bin_ranges, target):
-#     posteriorPDmean = []
-#     for posterior in pred_posteriors:
-#         posteriorPDmean.append(expectedValue(bin_ranges[target], posterior))
-#     mse = mean_squared_error(testing_data[target], posteriorPDmean)
-#     rmse = sqrt(mse)
-#     return rmse
-
-##This is for the figure parameters. 
+# ##This is for the figure parameters. 
 n_rows = 1
 n_cols = len(structure.keys()) ##the length of the BN i.e., five nodes
 
-###instantiate a figure as a placaholder for each distribution (axes)
+#instantiate a figure as a placaholder for each distribution (axes)
 fig = plt.figure(figsize=((200 * n_cols) / 96, (200 * n_rows) / 96), dpi=96, facecolor='white')
 fig.suptitle('Posterior Probabilities', fontsize=8) # title
 
-###Instantiate a counter
+#Instantiate a counter
 i = 0
 count = 0
 
-###This is to plot the priorPDs that we stored above.
+#This is to plot the priorPDs that we stored above.
 priorPDs_dict = {}
 
-
-
-###This creates a variable that corresponds to key (varname) and another variable which corresponds to the value (index)
+##This creates a variable that corresponds to key (varname) and another variable which corresponds to the value (index)
 for varName, index in bin_edges_dict.items(): 
     ax = fig.add_subplot(n_rows, n_cols, count+1) ###subplot with three arguments taken from above, including count
     ax.set_facecolor("whitesmoke") ###sets the background colour of subplot
-    # print(index)
+    print(index)
 
     edge = np.zeros((len(bin_edges_dict.items()), len(index[:])))
     binwidths = np.zeros((len(bin_edges_dict.items()), len(index[:-1])))
@@ -387,41 +414,30 @@ for varName, index in bin_edges_dict.items():
         binwidths[count, i] = (index[i+1] - index[i])
         xticksv[count,i]  = ((index[i+1] - index[i]) / 2.) + index[i]
 
-    ###This line plots the bars using xticks on x axis, probabilities on the y and binwidths as bar widths. 
-    ###It counts through them for every loop within the outer for loop 
-    ###posteriotrs.values() is a dict and therefore not ordered, so need to a way to make it ordered for future use. 
-    ###This line plots the priorPDs that we stored in the forloop above. 
+    #This line plots the bars using xticks on x axis, probabilities on the y and binwidths as bar widths. 
+    #It counts through them for every loop within the outer for loop 
+    #posteriotrs.values() is a dict and therefore not ordered, so need to a way to make it ordered for future use. 
+    #This line plots the priorPDs that we stored in the forloop above. 
     
     dataDict = {}
 
-    ###Loop goes through a dictionary which contains a key and a value
-    ##The first variable i.e., node will correspond to the key and the second i.e., posteriors, will correspond to the value.      
-    for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
-        p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
-        # print(posteriors) #So Dict(str,List[float]) and Dict(str,Dict(str,float))
-        # print(node) ##Can you make the second dict into the same data types as the first
-        if varName == node:
-            dataDict[node] = list(posteriors.values())
-            # print(dataDict[node])
-            if varName == 'acceleration_bins':
+    for node, posteriors in obs_posteriors.items():
+        varName2 = varName[:-5]
+        if varName2 == node:
+            dataDict[node] = posteriors
+            if node == 'acceleration':
                 ax.bar(xticksv[count], dataDict[node], align='center', width=binwidths[count], color='red', alpha=0.2, linewidth=0.2)         
-            elif varName == 'mass_bins' or 'force_bins':
+            elif node == 'mass' or node == 'force':
                 ax.bar(xticksv[count], dataDict[node], align='center', width=binwidths[count], color='green', alpha=0.2, linewidth=0.2)
 
-    # for var2, idx in prior_dict_xytrn.items():
-    #     print(var2)
-    #     print(idx)
-    #     priorPDs_dict[var2] = list(idx.values())
-    #     print(priorPDs_dict[var2])
-    #     ax.bar(xticksv[count], priorPDs_dict[var2], align='center', width=binwidths[count], color='black', alpha=0.2, linewidth=0.2)  
-    
 
-    ###These lines plot the limits of each axis. 
+
+    #These lines plot the limits of each axis. 
     plt.xlim(min(edge[count]), max(edge[count]))
     plt.xticks([np.round(e, 2) for e in edge[count]], rotation='vertical')
     plt.ylim(0, 1) 
 
-    ###These lines set labels and formatting style for the plots. 
+    #These lines set labels and formatting style for the plots. 
     ax.grid(color='0.2', linestyle=':', linewidth=0.1, dash_capstyle='round')
     ax.ticklabel_format(axis='x', style='sci', scilimits=(0, 0))
     ax.set_title(varName, fontweight="bold", size=6)
@@ -433,4 +449,5 @@ for varName, index in bin_edges_dict.items():
     
 fig.tight_layout()  # Improves appearance a bit.
 fig.subplots_adjust(top=0.85)  # white spacing between plots and title   
-# # plt.show()
+plt.show()
+

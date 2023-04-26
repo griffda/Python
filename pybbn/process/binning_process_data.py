@@ -27,6 +27,7 @@ from pybbn.graph.jointree import EvidenceBuilder
 import numpy as np
 import matplotlib.pyplot as plt # for drawing graphs
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error
 from math import sqrt
 
@@ -79,7 +80,6 @@ def binning_data(df):
         prior = y_train[col_bins].value_counts(normalize=True).sort_index()
         prior_dict_xytrn[col + '_train_priors'] = prior.to_dict()
 
-
     ### Testing set
     ###Equidistant binning for the inputs 
 
@@ -106,41 +106,40 @@ def binning_data(df):
 
     return df_binned, df_test_xy, df_test_x
 
-
 df_test_x, df_binned, df_test_xy = binning_data(df)
 print(df_binned.head())
 
 ###Step 5
 ###This is telling us how the network is structured between parent nodes and posteriors. 
 ###Using this method, we avoid having to build our own conditional probability tables using maximum likelihood estimation. 
-# def create_structure(df):
-#     columns = df.columns.tolist()
-#     structure = {}
-#     for column in columns:
-#         if column != 'coe_bins':
-#             structure[column] = []
-#     structure['coe_bins'] = columns[:-1]
-#     return structure
+def create_structure(df):
+    columns = df.columns.tolist()
+    structure = {}
+    for column in columns:
+        if column != 'coe_bins':
+            structure[column] = []
+    structure['coe_bins'] = columns[:-1]
+    return structure
 
 # structure = create_structure(df_binned)
 # print(structure)
 
-structure = {
-    'etath_bins':[],
-    'etaiso_bins': [],
-    'triang_bins': [],
-    'coreradius_bins': [],
-    'bt_bins': [],
-    'bscfmax_bins': [],
-    'coe_bins': ['etath_bins', 'etaiso_bins', 'triang_bins', 'coreradius_bins', 'bt_bins', 'bscfmax_bins']
-}
+# structure = {
+#     'etath_bins':[],
+#     'etaiso_bins': [],
+#     'triang_bins': [],
+#     'coreradius_bins': [],
+#     'bt_bins': [],
+#     'bscfmax_bins': [],
+#     'coe_bins': ['etath_bins', 'etaiso_bins', 'triang_bins', 'coreradius_bins', 'bt_bins', 'bscfmax_bins']
+# }
 
-###Step 5
-###Here we are calling the Factory function from pybbn and applying the above structure and data frame from csv as arguments. 
-bbn = Factory.from_data(structure, df_binned)
-###Step 5 
-###this line performs inference on the data 
-join_tree = InferenceController.apply(bbn)
+# ###Step 5
+# ###Here we are calling the Factory function from pybbn and applying the above structure and data frame from csv as arguments. 
+# bbn = Factory.from_data(structure, df_binned)
+# ###Step 5 
+# ###this line performs inference on the data 
+# join_tree = InferenceController.apply(bbn)
 
 # ###Write a function for probability dists:
 # def prob_dists(structure, data):
@@ -148,18 +147,18 @@ join_tree = InferenceController.apply(bbn)
 #     join_tree = InferenceController.apply(bbn)
 #     return join_tree
 
-# join_tree = prob_dists(structure, df_binned) ###Use the function:
-for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
-    p_no_ev = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
-    print(f'{node} : {p_no_ev}')
+# # join_tree = prob_dists(structure, df_binned) ###Use the function:
+# for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
+#     p_no_ev = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
+#     print(f'{node} : {p_no_ev}')
 
-##Write a function for adding evidence:
-def evidence(nod, bin_index, val):
-    ev = EvidenceBuilder() \
-    .with_node(join_tree.get_bbn_node_by_name(nod)) \
-    .with_evidence(bin_index, val) \
-    .build()
-    return ev 
+# ##Write a function for adding evidence:
+# def evidence(nod, bin_index, val):
+#     ev = EvidenceBuilder() \
+#     .with_node(join_tree.get_bbn_node_by_name(nod)) \
+#     .with_evidence(bin_index, val) \
+#     .build()
+#     return ev 
 
 ###inserting observation evidence
 ###This is saying that if there is evidence submitted in the arguments for the function to fill evidenceVars with that evidence
@@ -168,16 +167,16 @@ ev_dict = {}
 dataDict = {}
 
 
-for col in df_test_x: ###col is the column header i.e., nod in the function.
-    ev_dict = {'nod':col, 'bin_index':1, 'val': 1.0}
-    # ev = evidence(col, '2', 1.0) ###we want to apply hard evidence (100% prob) to the first bin, BUT THIS ISN'T SELECTING THE FIRST BIN, MENTION TO ZACK. 
-    ev = evidence(**ev_dict)
-    join_tree.set_observation(ev)
-#     # print(ev_dict)
+# for col in df_test_x: ###col is the column header i.e., nod in the function.
+#     ev_dict = {'nod':col, 'bin_index':1, 'val': 1.0}
+#     # ev = evidence(col, '2', 1.0) ###we want to apply hard evidence (100% prob) to the first bin, BUT THIS ISN'T SELECTING THE FIRST BIN, MENTION TO ZACK. 
+#     ev = evidence(**ev_dict)
+#     join_tree.set_observation(ev)
+# #     # print(ev_dict)
 
-for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
-    p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
-    print(f'{node} : {p}')
+# for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries 
+#     p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
+#     print(f'{node} : {p}')
 
 # def create_figure(n_rows, n_cols):
 #     """
