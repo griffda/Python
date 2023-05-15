@@ -32,6 +32,7 @@ df = pd.read_csv('/Users/tomgriffiths/OneDrive - Imperial College London/Researc
                  encoding=('utf-8')
                  )
 
+###Something is not working correctly with this function. Some of the observation dictionaries are not hard values for inputs
 def binning_data(df, test_size=0.2):
     # Select the columns of interest
     x_cols = ['mass', 'force']

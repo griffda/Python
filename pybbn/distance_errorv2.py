@@ -42,7 +42,6 @@ for node, posteriors in xy_train_priors.items(): ### this is a list of dictionar
     if node == 'acceleration_bins':
         priorDict_training[node] = (list(posteriors.values()))
 
-
 ###Step 6: Validate Bayes Net requires: 
 ###input testing set, which through inference gives predicted output set
 with open('x_test_bins.pkl', 'rb') as f:
@@ -61,30 +60,28 @@ with open('y_testing_probs2.pkl', 'rb') as f:
     testingData_y = pickle.load(f)
     # print(testingData_y)
 
-
 ###These are the testing set probabilities for inputs and outputs with evidence applied. 
 ####Predicted output set
 with open('posteriors_evidence.pkl', 'rb') as f:
     posteriors_evidence = pickle.load(f)
-
-
 
 for node, posteriors in posteriors_evidence.items(): ### this is a list of dictionaries 
     p = ', '.join([f'{val}={prob:.5f}' for val, prob in posteriors.items()])
     print(f'{node} : {p}')
     posteriorDict_testing[node] = list(posteriors.values())
 
-
 expectedV = 0.0
 count = 0
-i = 0
+i = 0 
 
+###These are the bins for the training set inputs and outputs:
+with open('bin_edges_dict_train.pkl', 'rb') as f:
+    bin_edges_train = pickle.load(f)
 
 ###These are the bins for the testing set outputs:
 with open('y_test_bins.pkl', 'rb') as f:
     y_test_bins = pickle.load(f)
 
-###implementing zacks code to plot the distance errors.  
 
 ###here is how the different arguments could be taken: 
 ###this is the same as I used anyway. 
@@ -102,11 +99,60 @@ predicted_bin_probabilities = [[0.1, 0.2, 0.3, 0.2, 0.2],
                                [0.2, 0.2, 0.2, 0.2, 0.2],
                                [0.1, 0.1, 0.4, 0.2, 0.2]]
 
+
+###MY DATA
+Predicted_target_posteriors = [[0.0, 0.0, 0.0, 0.0, 0.04, 0.94], 
+                              [0.0, 0.0, 0.0, 0.0, 0.0, 1.0], 
+                              [0.0, 0.0, 0.0, 0.0, 0.0, 1.0], 
+                              [0.17, 0.17, 0.17, 0.17, 0.17, 0.17]]
+
+Observation_posteriors = {'acceleration': [[0.03, 0.03, 0.03, 0.03, 0.03, 0.86], [0.17, 0.17, 0.17, 0.17, 0.17, 0.17], [0.37, 0.33, 0.16, 0.02, 0.11, 0.02], [0.02, 0.08, 0.11, 0.11, 0.29, 0.41]], 
+                         'force': [[0.07, 0.22, 0.36, 0.25, 0.08, 0.02], [1.0, 0.0, 0.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 1.0, 0.0]], 
+                         'mass': [[0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.04, 0.18, 0.42, 0.3, 0.06], [0.0, 0.04, 0.18, 0.42, 0.3, 0.06]]}
+
+
+Observation_dictionary = {'mass_bins': {'bin_index': '2', 'val': 1.0}, 
+                          'force_bins': {'bin_index': '5', 'val': 1.0}, 
+                          'acceleration_bins': {'bin_index': '10', 'actual_value': 2.24}}
+
+Observation_dictionaries = [{'mass_bins': {'bin_index': '2', 'val': 1.0}, 
+                             'force_bins': {'bin_index': '4', 'val': 1.0}, 
+                             'acceleration_bins': {'bin_index': '6', 'actual_value': 2.11}}, 
+                            {'mass_bins': {'bin_index': '1', 'val': 1.0}, 
+                             'force_bins': {'bin_index': '5', 'val': 1.0}, 
+                             'acceleration_bins': {'bin_index': '6', 'actual_value': 2.26}}, 
+                            {'mass_bins': {'bin_index': '3', 'val': 1.0}, 
+                            'force_bins': {'bin_index': '3', 'val': 1.0}, 
+                            'acceleration_bins': {'bin_index': '4', 'actual_value': 2.01}}, 
+                            {'mass_bins': {'bin_index': '4', 'val': 1.0}, 
+                            'force_bins': {'bin_index': '4', 'val': 1.0}, 
+                            'acceleration_bins': {'bin_index': '4', 'actual_value': 2.0}}]
+
+def extract_data_from_dict_list(dict_list, target_dict):
+    bin_indices = []
+    actual_values = []
+    for d in dict_list:
+        for k, v in d.items():
+            if k == target_dict:
+                bin_indices.append(int(v['bin_index']))
+                if 'actual_value' in v:
+                    actual_values.append(v['actual_value'])
+                else:
+                    actual_values.append(None)
+    print('bin_indices:', bin_indices)
+    print('actual_values:', actual_values)  
+    return bin_indices, actual_values
+
+target_dict = 'acceleration_bins'
+bin_indices, actual_values = extract_data_from_dict_list(Observation_dictionaries, target_dict)
+
+bin_indices = [6, 6, 4, 4]
+actual_values = [2.11, 2.26, 2.01, 2.0]
                               
 ###This argument is a list of actual output values from the testing dataset 
 ###which are used to compute the distance error between the predicted bin and the actual bin. 
 ###e.g, the first value should corrspond to the first bin in correct bin locations data. 
-actual_values = [0.4, 1.2, 2.5, 3.6, 4.8, 2.5]
+
 
 ###bin_ranges is a list of lists, where each inner list contains the upper and lower bounds of each bin.
 bins_dict = y_test_bins
@@ -122,7 +168,6 @@ def extract_bin_ranges(variable_name, bin_dict): # specify the variable name for
 
 # acceleration_bin_ranges = extract_bin_ranges('acceleration', bins_dict)
 bin_ranges = extract_bin_ranges('acceleration', bins_dict)
-
 
 def distribution_distance_error(correct_bin_locations, predicted_bin_probabilities, actual_values, bin_ranges, plot=False):
 
@@ -151,13 +196,13 @@ def distribution_distance_error(correct_bin_locations, predicted_bin_probabiliti
         norm_distance_error = (distance_error - bin_ranges[0][0]) / (
         bin_ranges[len(bin_ranges) - 1][1] - bin_ranges[0][0])
 
-        distance_errors.append(distance_error)
-        norm_distance_errors.append(norm_distance_error*100) # remove 100 to normalise
+        distance_errors.append(round(distance_error,3))
+        norm_distance_errors.append(round(norm_distance_error*100,3)) # remove 100 to normalise
 
-        print('distance_error:', distance_error)
+        print('distance_error:', round(distance_error,3))
         print('max def value:', bin_ranges[len(bin_ranges) - 1][1])
         print('min def value:', bin_ranges[0][0])
-        print('normalised distance error:', norm_distance_error)
+        print('normalised distance error:', round(norm_distance_error,3))
 
     if plot == True:
         plt.hist(norm_distance_errors, bins=15)
@@ -166,34 +211,24 @@ def distribution_distance_error(correct_bin_locations, predicted_bin_probabiliti
 
     return distance_errors, norm_distance_errors, output_bin_means
 
-
-
-istance_errors, norm_distance_errors, output_bin_means  = distribution_distance_error(correct_bin_locations, predicted_bin_probabilities, actual_values, bin_ranges, plot=False)
+distance_errors, norm_distance_errors, output_bin_means = distribution_distance_error(bin_indices, Predicted_target_posteriors, actual_values, bin_ranges, plot=False)
 
 ###implementing zacks code via generateErrors function to calculate rmse
-###this is how the different arguments could be taken. 
-###In this example, predictedTargetPosteriors is a list of lists representing the posterior probabilities for each test data point, 
-predictedTargetPosteriors = [[0.1, 0.4, 0.5], 
-                             [0.7, 0.2, 0.1], 
-                             [0.2, 0.2, 0.6]]
+###MY VERSION
+testingData = {'acceleration': [2.11, 2.26, 2.01, 2.0]}
 
-###testingData is a dictionary where the keys are the target variable names and the values are lists of actual target values for each test data point
-testingData = {'target1': [0.8, 0.2, 0.5], 
-               'target2': [0.1, 0.3, 0.6]}
+###MY VERSION
+###because it reads first value of bins as 0 this is giving out of range error. 
+# binnedTestingData = {'acceleration': [6, 6, 4, 4]}
+binnedTestingData = {'acceleration': [5, 5, 3, 3]}
 
-###binnedTestingData is also a dictionary where the keys are the target variable names and the values are lists of bin numbers for each test data point, 
-binnedTestingData = {'target1': [1, 0, 2], 
-                     'target2': [0, 0, 2]}
+binRanges = {'acceleration': [(1.779, 1.922), (1.922, 1.966), (1.966, 2.003), (2.003, 2.04),(2.04, 2.09),(2.09, 2.256)]}
 
-
-###same as above
-binRanges = {'target1': [(0, 0.3), (0.3, 0.6), (0.6, 1)], 
-             'target2': [(0, 0.3), (0.3, 0.6), (0.6, 1)]}
-
-target = 'target1'
+# bin_ranges = extract_bin_ranges('acceleration', bins_dict)
+###MY VERSION
+target = 'acceleration'
 
 posteriorPDmeans = []
-
 
 ###function for expected value
 def expectedValue(binRanges, probabilities):
@@ -215,8 +250,6 @@ def expectedValue(binRanges, probabilities):
 def generateErrors (predictedTargetPosteriors, testingData, binnedTestingData, binRanges, target):
 
     posteriorPDmeans = []
-
-
 
     for posterior in predictedTargetPosteriors:
 
@@ -240,10 +273,7 @@ def generateErrors (predictedTargetPosteriors, testingData, binnedTestingData, b
 
     return float(rmse),float(loglossfunction),norm_distance_errors,correct_bin_probabilities
 
-rmse, loglossfunction, norm_distance_errors, correct_bin_probabilities = generateErrors(predictedTargetPosteriors, testingData, binnedTestingData, binRanges, target)
+rmse, loglossfunction, norm_distance_errors, correct_bin_probabilities = generateErrors(Predicted_target_posteriors, testingData, binnedTestingData, binRanges, target)
 
-# print(distance_error)
+print(distance_errors)
 print(norm_distance_errors)
-
-
-

@@ -50,16 +50,21 @@ x_train, x_test, y_train, y_test = train_test_split(x_df, y_df, test_size=0.5)
 # x_train, x_test = train_test_split(df, test_size=0.5)
 
 ###Bin labels:
-labels = [1,2,3,4,5,6]
 # labels = [1,2,3]
+# labels = [1,2,3,4]
+# labels = [1,2,3,4,5]
+# labels = [1,2,3,4,5,6]
+# labels = [1,2,3,4,5,6,7]
+# labels = [1,2,3,4,5,6,7,8]
+# labels = [1,2,3,4,5,6,7,8,9]
+labels = [1,2,3,4,5,6,7,8,9,10]
 
-number_of_bins = 6
+number_of_bins = 10
 
 ###Empty dicts to fill
 bin_edges_dict = {}
 prior_dict_xytrn = {}
-prior_dict_xytrnLS = {}
-# prior_dict_ytrn = {}
+
 
 
 ###Step 4a
@@ -97,7 +102,8 @@ for name in y_train:
     prior = y_train[name_bins_ytrn].value_counts(normalize=True).sort_index()
     priorPDs = prior.to_dict()
     prior_dict_xytrn[name_priors] = priorPDs
-    # print(prior_dict_xytrn.items())
+    print(prior_dict_xytrn)
+
 
 ###Must join x_train and y_train and pass to the BN:
 # df_binned = x_train.drop(['m', 'theta','v0', 'vf', 'KE'], axis=1)
@@ -133,6 +139,11 @@ def prob_dists(structure, data):
     bbn = Factory.from_data(structure, data)
     join_tree = InferenceController.apply(bbn)
     return join_tree
+
+# def prob_dists(structure, data):
+#     global join_tree
+#     bbn = Factory.from_data(structure, data)
+#     join_tree = InferenceController.apply(bbn)
 
 join_tree = prob_dists(structure, df_binned_xy) ###Use the function:
 # for node, posteriors in join_tree.get_posteriors().items(): ### this is a list of dictionaries
@@ -191,6 +202,7 @@ testingData_y = {}
 ###Percentile binning for the outputs
 ###Step 4b
 for name in y_test:
+    testingData_y[name] = list(y_test[name])
     name_bins_ytst = name + '_bins'
     y_test[name_bins_ytst], bin_edges = pd.qcut(y_test[name], number_of_bins, labels=labels, retbins=True)
     bin_edges_dict_ytest[name_bins_ytst]=bin_edges
@@ -204,17 +216,24 @@ for name in y_test:
     priorPDs = prior.to_dict()
     prior_dict_xytst[name_priors] = priorPDs
     prior_dict_ytst[name_priors] = priorPDs
-    testingData_y[name] = list(priorPDs.values()) ##this line converts testing data into format required for generate errors function.
+    # testingData_y[name] = list(priorPDs.values()) ##this line converts testing data into format required for generate errors function.
     # print(testingData_y)
     with open('y_testing_probs.pkl', 'wb') as f: pickle.dump(prior_dict_ytst[name_priors], f)
     with open('y_testing_probs2.pkl', 'wb') as f: pickle.dump(testingData_y[name], f)
-print(prior_dict_xytst)
+
 
 ###Must join x_test and y_test and pass to the BN:
 ###We are testing for outputs and therefore do not want to use any of the training data:
 df_test_x = x_test.drop(['force', 'mass'], axis=1)
 df_test_y = y_test.drop(['acceleration'], axis=1)
 df_test_xy = pd.concat([df_test_x, df_test_y], axis=1)
+
+df_test_x_bins = df_test_x = x_test.drop(['force', 'mass'], axis=1)
+df_test_xy1 = pd.concat([df_test_x_bins, y_test], axis=1)
+# print(df_test_xy1.head())
+
+
+
 
 ###Pybbn only reads data types as strings, so this line converts the data in the csv from int64 to string
 df_test_x = df_test_x.applymap(str)
@@ -228,7 +247,21 @@ df_test_xy = df_test_xy.applymap(str)
 ev_dict = {}
 dataDict = {}
 
-def generate_obs_dict(test_df):
+# def generate_obs_dict(test_df):
+#     # choose a random row from the test_df
+#     row = test_df.sample()
+#     print("Selected row index:", row.index[0])
+
+#     # generate an obs_dict from the chosen row
+#     obs_dict = {}
+#     for col in test_df.columns:
+#         bin_index = str(row[col].values[0])
+#         obs_dict[col] = {'bin_index': bin_index, 'val': 1.0}
+
+#     print("Observation dictionary:", obs_dict)
+#     return obs_dict
+
+def generate_obs_dict(test_df, target):
     # choose a random row from the test_df
     row = test_df.sample()
     print("Selected row index:", row.index[0])
@@ -236,14 +269,16 @@ def generate_obs_dict(test_df):
     # generate an obs_dict from the chosen row
     obs_dict = {}
     for col in test_df.columns:
-        bin_index = str(row[col].values[0])
-        obs_dict[col] = {'bin_index': bin_index, 'val': 1.0}
+        if col == target:
+            obs_dict[col] = {'bin_index': str(row[col].values[0]), 'actual_value': round(row['acceleration'].values[0],2)}
+        elif col.endswith('_bins'):
+            obs_dict[col] = {'bin_index': str(row[col].values[0]), 'val': 1.0}
 
     print("Observation dictionary:", obs_dict)
     return obs_dict
 
 
-obs_dict = generate_obs_dict(df_test_xy)
+obs_dict = generate_obs_dict(df_test_xy1, 'acceleration_bins')
 
 def set_observations(df, obs_dict, default_bin=5):
     ev_list = []
@@ -266,13 +301,12 @@ for ev_dict in ev_list:
     ev = evidence(**ev_dict)
     join_tree.set_observation(ev)
 
-
 def get_obs_and_pred_posteriors(join_tree, target_variable):
     obs_posteriors = {}
 
     for node, posteriors in join_tree.get_posteriors().items():
         obs = node[:-5]  # remove the "_bins" suffix from the node name to get the observation name
-        obs_posteriors[obs] = [posteriors[val] for val in sorted(posteriors)]  # sort the posteriors by value and add them to the dictionary
+        obs_posteriors[obs] = [round(posteriors[val],2) for val in sorted(posteriors)]  # sort the posteriors by value and add them to the dictionary
 
     print("Observation posteriors:", obs_posteriors)
     predictedTargetPosteriors = []
@@ -280,11 +314,10 @@ def get_obs_and_pred_posteriors(join_tree, target_variable):
     for node, posteriors in join_tree.get_posteriors().items():
         obs = node[:-5]  # remove the "_bins" suffix from the node name to get the observation name
         if obs == target_variable:  # check if the observation corresponds to the specified target variable
-            predictedTargetPosteriors.append([posteriors[val] for val in sorted(posteriors)])  # sort the posteriors by value and add them to the list
+            predictedTargetPosteriors = [round(posteriors[val],2) for val in sorted(posteriors)]  # sort the posteriors by value and add them to the list
 
     print("Predicted target posteriors:", predictedTargetPosteriors)
     return obs_posteriors, predictedTargetPosteriors
-
 
 obs_posteriors, predictedTargetPosteriors = get_obs_and_pred_posteriors(join_tree, "acceleration") ###obs_posteriors comes first. This is to match the order of the unpacking in the function call.
 # print("Observation posteriors:", obs_posteriors)
@@ -322,6 +355,7 @@ def create_subplot(fig, n_rows, n_cols, count, varName, bin_edges_dict, priors_d
         xticksv[count,i]  = ((index[i+1] - index[i]) / 2.) + index[i]
 
     dataDict = {}
+    priorPDs_dict = {}
 
     for node, posteriors in obs_posteriors.items():
         varName2 = varName[:-5]
@@ -331,15 +365,11 @@ def create_subplot(fig, n_rows, n_cols, count, varName, bin_edges_dict, priors_d
                 ax.bar(xticksv[count], dataDict[node], align='center', width=binwidths[count], color='red', alpha=0.2, linewidth=0.2)
             elif node == 'mass' or node == 'force':
                 ax.bar(xticksv[count], dataDict[node], align='center', width=binwidths[count], color='green', alpha=0.2, linewidth=0.2)
-
-    priorPDs_dict = {}
-
     for var2, idx in priors_dict.items():
-        varName3 = var2[:-12]
-        if varName3 == node:
-            priorPDs_dict[var2] = list(idx.values())
+        varName3 = var2[:-13]
+        if varName2 == varName3:
+            priorPDs_dict[var2] = [idx[i] for i in range(1, len(idx) + 1)]
             ax.bar(xticksv[count], priorPDs_dict[var2], align='center', width=binwidths[count], color='black', alpha=0.2, linewidth=0.2)
-
 
     plt.xlim(min(edge[count]), max(edge[count]))
     plt.xticks([np.round(e, 2) for e in edge[count]], rotation='vertical')
@@ -373,4 +403,4 @@ def plot_posterior_probabilities(n_rows, n_cols, bin_edges_dict, priors_dict, ob
     if plot == True:
         plt.show()
 
-plot_posterior_probabilities(n_rows, n_cols, bin_edges_dict, prior_dict_xytst, obs_posteriors, plot=False)
+plot_posterior_probabilities(n_rows, n_cols, bin_edges_dict, prior_dict_xytrn, obs_posteriors, plot=True) 
