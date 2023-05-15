@@ -2,18 +2,19 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
-def binning_data(file_path, test_size=0.2, x_cols=None, y_cols=None): ###Steps 2a (store inoput values), and 2b (store response values) into csv columns.
-    # Read the CSV file
-    ###This loads csv into a dataframe to be manipulated.
-    df = pd.read_csv(file_path)
+###Steps 2a (store inoput values), and 2b (store response values) into csv columns.
+###This loads csv into a dataframe to be manipulated.
+df = pd.read_csv('/Users/tomgriffiths/OneDrive - Imperial College London/Research/Python/gitlibraries/Python/outputv3.csv',
+                 index_col=False,
+                 usecols=['mass', 'force','acceleration'],
+                 encoding=('utf-8')
+                 )
 
-    # Check if x_cols and y_cols are provided, otherwise use default column names
-    if x_cols is None:
-        x_cols = df.columns[:-1].tolist()  # Select all columns except the last one as x_cols
-    if y_cols is None:
-        y_cols = [df.columns[-1]]  # Select the last column as y_cols
-
-
+###Something is not working correctly with this function. Some of the observation dictionaries are not hard values for inputs
+def binning_data(df, test_size=0.2):
+    # Select the columns of interest
+    x_cols = ['force', 'mass']
+    y_cols = ['acceleration']
     x_df = df[x_cols]
     y_df = df[y_cols]
 
@@ -54,6 +55,5 @@ def binning_data(file_path, test_size=0.2, x_cols=None, y_cols=None): ###Steps 2
 
     return df_train_binned, df_test_binned, bin_edges_dict, prior_dict_xytrn
 
-df_train_binned, df_test_binned, bin_edges_dict, prior_dict_xytrn = binning_data('/Users/tomgriffiths/OneDrive - Imperial College London/Research/Python/gitlibraries/PROCESS-/griff_work/simulations/sobol/st10/uncertainties_test.csv', 
-                                                                                 0.4, x_cols=["fdene", "boundu(10)", "feffcd", "aspect", "boundu(2)", "outlet_temp", "beta", "etanbi"], y_cols=["capcost", "rmajor"])
+df_train_binned, df_test_binned, bin_edges_dict, prior_dict_xytrn = binning_data(df, 0.4)
  
