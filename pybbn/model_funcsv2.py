@@ -144,8 +144,9 @@ join_tree = prob_dists(structure, df_binned_xy) ###Use the function:
 def evidence(nod, bin_index, val):
     ev = EvidenceBuilder() \
     .with_node(join_tree.get_bbn_node_by_name(nod)) \
-    .with_evidence(bin_index, val) \
+    .with_evidence(str(bin_index), val) \
     .build()
+    print("setting evidence")
     return ev
 
 
@@ -216,6 +217,10 @@ df_test_x = x_test.drop(['force', 'mass'], axis=1)
 df_test_y = y_test.drop(['acceleration'], axis=1)
 df_test_xy = pd.concat([df_test_x, df_test_y], axis=1)
 
+df_test_x_bins = df_test_x = x_test.drop(['force', 'mass'], axis=1)
+df_test_xy1 = pd.concat([df_test_x_bins, y_test], axis=1)
+print(df_test_xy1.head())
+
 ###Pybbn only reads data types as strings, so this line converts the data in the csv from int64 to string
 df_test_x = df_test_x.applymap(str)
 df_test_y = df_test_y.applymap(str)
@@ -228,7 +233,21 @@ df_test_xy = df_test_xy.applymap(str)
 ev_dict = {}
 dataDict = {}
 
-def generate_obs_dict(test_df):
+# def generate_obs_dict(test_df):
+#     # choose a random row from the test_df
+#     row = test_df.sample()
+#     print("Selected row index:", row.index[0])
+
+#     # generate an obs_dict from the chosen row
+#     obs_dict = {}
+#     for col in test_df.columns:
+#         bin_index = str(row[col].values[0])
+#         obs_dict[col] = {'bin_index': bin_index, 'val': 1.0}
+
+#     print("Observation dictionary:", obs_dict)
+#     return obs_dict
+
+def generate_obs_dict(test_df, target):
     # choose a random row from the test_df
     row = test_df.sample()
     print("Selected row index:", row.index[0])
@@ -236,45 +255,90 @@ def generate_obs_dict(test_df):
     # generate an obs_dict from the chosen row
     obs_dict = {}
     for col in test_df.columns:
-        bin_index = str(row[col].values[0])
-        obs_dict[col] = {'bin_index': bin_index, 'val': 1.0}
+        if col == target:
+            obs_dict[col] = {'bin_index': str(row[col].values[0]), 'actual_value': round(row['acceleration'].values[0],2)}
+        elif col.endswith('_bins'):
+            obs_dict[col] = {'bin_index': str(row[col].values[0]), 'val': 1.0}
 
-    print("Observation dictionary:", obs_dict)
+    # print("Observation dictionary:", obs_dict)
     return obs_dict
 
-def generate_multiple_obs_dicts(test_df, num_samples):
+# obs_dict = generate_obs_dict(df_test_xy1, 'acceleration_bins')
+
+def generate_multiple_obs_dicts(test_df, num_samples, target):
     obs_dicts = []
     for i in range(num_samples):
-        obs_dict = generate_obs_dict(test_df)
+        obs_dict = generate_obs_dict(test_df, target)
         obs_dicts.append(obs_dict)
     print("Observation dictionaries:", obs_dicts)
     return obs_dicts
 
-obs_dicts = generate_multiple_obs_dicts(df_test_xy, 2)
+obs_dicts = generate_multiple_obs_dicts(df_test_xy1, 4, 'acceleration_bins')
 
 
-def set_multiple_observations(df, obs_dicts, default_bin=5):
+# def set_multiple_observations(df, obs_dicts, default_bin=5):
+#     all_ev_list = []
+#     for obs_dict in obs_dicts:
+#         ev_list = []
+#         for col in df.columns:
+#             if col in obs_dict:
+#                 bin_index = obs_dict[col]['bin_index']
+#                 val = obs_dict[col]['val']
+#             else:
+#                 bin_index = str(default_bin)
+#                 val = 1.0
+#             ev_dict = {'nod':col, 'bin_index':bin_index, 'val': val}
+#             ev_list.append(ev_dict)
+#         all_ev_list.append(ev_list)
+#     print("All evidence lists:", all_ev_list)
+#     return all_ev_list
+
+# # set_observations(df_test_x, obs_dict, default_bin=5)
+
+# all_ev_list = set_multiple_observations(df_test_xy, obs_dicts)
+# print(all_ev_list)
+
+def set_multiple_observations(df, obs_dicts, dict_names, default_bin=5):
+    df = df.drop(['acceleration', 'acceleration_bins'], axis=1) ###this will need to change can instead specify which ones to drop in
     all_ev_list = []
+    print(df.head())
     for obs_dict in obs_dicts:
-        ev_list = []
-        for col in df.columns:
-            if col in obs_dict:
-                bin_index = obs_dict[col]['bin_index']
-                val = obs_dict[col]['val']
-            else:
-                bin_index = str(default_bin)
-                val = 1.0
-            ev_dict = {'nod':col, 'bin_index':bin_index, 'val': val}
-            ev_list.append(ev_dict)
-        all_ev_list.append(ev_list)
+        if obs_dict.keys() & dict_names:  # if obs_dict contains any of the dict_names
+            ev_list = []
+            for col in df.columns:
+                if col in obs_dict:
+                    bin_index = obs_dict[col]['bin_index']
+                    val = obs_dict[col]['val']
+                else:
+                    bin_index = str(default_bin)
+                    val = 1.0
+                ev_dict = {'nod':col, 'bin_index':bin_index, 'val': val}
+                ev_list.append(ev_dict)
+            all_ev_list.append(ev_list)
     print("All evidence lists:", all_ev_list)
     return all_ev_list
 
 
-# set_observations(df_test_x, obs_dict, default_bin=5)
+dict_names = ['mass_bins', 'force_bins']
+all_ev_list = set_multiple_observations(df_test_xy1, obs_dicts, dict_names, default_bin=5)
 
-all_ev_list = set_multiple_observations(df_test_x, obs_dicts)
-print(all_ev_list)
+def extract_data_from_dict_list(dict_list, target_dict):
+    bin_indices = []
+    actual_values = []
+    for d in dict_list:
+        for k, v in d.items():
+            if k == target_dict:
+                bin_indices.append(int(v['bin_index']))
+                if 'actual_value' in v:
+                    actual_values.append(v['actual_value'])
+                else:
+                    actual_values.append(None)
+    print('bin_indices:', bin_indices)
+    print('actual_values:', actual_values)  
+    return bin_indices, actual_values
+
+target_dict = 'acceleration_bins'
+bin_indices, actual_values = extract_data_from_dict_list(obs_dicts, target_dict)
 
 
 def get_obs_and_pred_posteriors(join_tree, target_variable):
@@ -282,18 +346,18 @@ def get_obs_and_pred_posteriors(join_tree, target_variable):
 
     for node, posteriors in join_tree.get_posteriors().items():
         obs = node[:-5]  # remove the "_bins" suffix from the node name to get the observation name
-        obs_posteriors[obs] = [posteriors[val] for val in sorted(posteriors)]  # sort the posteriors by value and add them to the dictionary
+        obs_posteriors[obs] = [round(posteriors[val],2) for val in sorted(posteriors)]  # sort the posteriors by value and add them to the dictionary
 
-    print("Observation posteriors:", obs_posteriors)
+    # print("Observation posteriors:", obs_posteriors)
 
     predictedTargetPosteriors = []
 
     for node, posteriors in join_tree.get_posteriors().items():
         obs = node[:-5]  # remove the "_bins" suffix from the node name to get the observation name
         if obs == target_variable:  # check if the observation corresponds to the specified target variable
-            predictedTargetPosteriors.append([posteriors[val] for val in sorted(posteriors)])  # sort the posteriors by value and add them to the list
+            predictedTargetPosteriors = [round(posteriors[val],2) for val in sorted(posteriors)]  # sort the posteriors by value and add them to the list
 
-    print("Predicted target posteriors:", predictedTargetPosteriors)
+    # print("Predicted target posteriors:", predictedTargetPosteriors)
 
     return obs_posteriors, predictedTargetPosteriors
 
@@ -332,11 +396,16 @@ def get_posteriors(all_ev_list, join_tree):
     for ev_list in all_ev_list:
         for ev_dict in ev_list:
             ev = evidence(ev_dict['nod'], ev_dict['bin_index'], ev_dict['val'])
+            # ev = evidence(ev_dict['nod'], int(ev_dict['bin_index']), ev_dict['val'])
+
             join_tree.set_observation(ev)
             obs_posteriors, predictedTargetPosteriors = get_obs_and_pred_posteriors(join_tree, "acceleration")
 
             # Add observation posteriors to dictionary
             for node_id, posterior in obs_posteriors.items():
+                print(node_id)
+                print(posterior)
+
                 if node_id not in obs_posteriors_dict:
                     obs_posteriors_dict[node_id] = []
                 obs_posteriors_dict[node_id].append(posterior)
@@ -351,9 +420,9 @@ def get_posteriors(all_ev_list, join_tree):
 
 get_posteriors(all_ev_list, join_tree)
 
-# # ##This is for the figure parameters.
-# n_rows = 1
-# n_cols = len(structure.keys()) ##the length of the BN i.e., five nodes
+# ##This is for the figure parameters.
+n_rows = 1
+n_cols = len(structure.keys()) ##the length of the BN i.e., five nodes
 
 # def create_figure(n_rows, n_cols):
 #     """
@@ -451,3 +520,4 @@ get_posteriors(all_ev_list, join_tree)
 
 
 # all_posteriors = run_plot_posterior_probabilities2(5, n_rows, n_cols, bin_edges_dict, prior_dict_xytst)
+
