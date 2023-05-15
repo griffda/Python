@@ -1,4 +1,4 @@
-# from join_tree_population import join_tree, evidence
+from join_tree_population import evidence
 # from discretisation import  df_test_binned
 
 def generate_obs_dict(test_df, target):
@@ -109,15 +109,15 @@ def get_posteriors(join_tree, target):
 # For example, you can add a unique suffix to the evidence node names in each evidence list,
 # and need to tell 
 
-def get_posteriors(all_ev_list, join_tree):
+def get_all_posteriors(all_ev_list, join_tree):
     obs_posteriors_dict = {}
     predicted_posteriors_list = []
 
     for ev_list in all_ev_list:
         for ev_dict in ev_list:
-            ev = evidence(ev_dict['nod'], ev_dict['bin_index'], ev_dict['val'])
+            ev = evidence(ev_dict['nod'], ev_dict['bin_index'], ev_dict['val'], join_tree)
             join_tree.set_observation(ev)
-            obs_posteriors, predictedTargetPosteriors = get_obs_and_pred_posteriors(join_tree, "acceleration")
+            obs_posteriors, predictedTargetPosteriors = get_posteriors(join_tree, "acceleration")
 
         for node_id, posterior in obs_posteriors.items():
             if node_id not in obs_posteriors_dict:
