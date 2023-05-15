@@ -186,7 +186,7 @@ for name in x_test:
     with open('x_test_bins.pkl', 'wb') as f: pickle.dump(bin_edges_dict_xtest, f)
     with open('y_testing_probs2.pkl', 'wb') as f: pickle.dump(testingData_x[name], f)
 
-
+print(bin_edges_dict)
 testingData_y = {}
 
 ###Percentile binning for the outputs

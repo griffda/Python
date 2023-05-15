@@ -221,6 +221,7 @@ for name in y_test:
     with open('y_testing_probs.pkl', 'wb') as f: pickle.dump(prior_dict_ytst[name_priors], f)
     with open('y_testing_probs2.pkl', 'wb') as f: pickle.dump(testingData_y[name], f)
 
+print("bin edges:",bin_edges_dict)
 
 ###Must join x_test and y_test and pass to the BN:
 ###We are testing for outputs and therefore do not want to use any of the training data:
@@ -388,6 +389,7 @@ def create_all_subplots(fig, n_rows, n_cols, bin_edges_dict, priors_dict, obs_po
     """
     count = 0
     for varName in bin_edges_dict:
+        # print(bin_edges_dict)
         fig = create_subplot(fig, n_rows, n_cols, count, varName, bin_edges_dict, priors_dict, obs_posteriors)
         count += 1
     return fig
