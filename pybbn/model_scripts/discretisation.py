@@ -54,6 +54,6 @@ def binning_data(file_path, test_size=0.2, x_cols=None, y_cols=None): ###Steps 2
 
     return df_train_binned, df_test_binned, bin_edges_dict, prior_dict_xytrn
 
-df_train_binned, df_test_binned, bin_edges_dict, prior_dict_xytrn = binning_data('/Users/tomgriffiths/OneDrive - Imperial College London/Research/Python/gitlibraries/PROCESS-/griff_work/simulations/sobol/st10/uncertainties_test.csv', 
-                                                                                 0.4, x_cols=["fdene", "boundu(10)", "feffcd", "aspect", "boundu(2)", "outlet_temp", "beta", "etanbi"], y_cols=["capcost", "rmajor"])
- 
+df_train_binned, df_test_binned, bin_edges_dict, prior_dict_xytrn = binning_data('/Users/tomgriffiths/OneDrive - Imperial College London/Research/Python/gitlibraries/Python/outputv3.csv', 
+                                                                                 0.4, x_cols=['mass', 'force'], y_cols=['acceleration'])
+print(df_train_binned.head())
