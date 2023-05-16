@@ -1,4 +1,5 @@
-from join_tree_population import evidence
+# from join_tree_population import evidence
+from bnmodel.join_tree_population import evidence
 # from discretisation import  df_test_binned
 
 def generate_obs_dict(test_df, target):
@@ -87,8 +88,8 @@ def get_posteriors(join_tree, target):
 
     for node, posteriors_raw in join_tree.get_posteriors().items():
         # posteriors[obs] = [round(posteriors_raw[val],2) for val in sorted(posteriors_raw)]  # sort the posteriors by value and add them to the dictionary
-        posteriors[obs] = posteriors_raw
-
+        obs_posteriors[node] = [posteriors_raw[val] for val in posteriors_raw]
+    
     # print("Observation posteriors:", obs_posteriors)
 
     predictedTargetPosteriors = []
@@ -96,11 +97,11 @@ def get_posteriors(join_tree, target):
     for node, posteriors in join_tree.get_posteriors().items():
         if node == target:  # check if the observation corresponds to the specified target variable
             # predictedTargetPosteriors = [round(posteriors[val],2) for val in sorted(posteriors)]  # sort the posteriors by value and add them to the list
-            predictedTargetPosteriors = posteriors 
+            predictedTargetPosteriors = [posteriors[val] for val in posteriors]
 
     # print("Predicted target posteriors:", predictedTargetPosteriors)
 
-    return posteriors, predictedTargetPosteriors
+    return obs_posteriors, predictedTargetPosteriors
 
 
 ###The issue arises from having identical evidence lists. 
