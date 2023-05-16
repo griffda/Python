@@ -1,73 +1,113 @@
 from bnmodel.join_tree_population import evidence
 
 
-def generate_obs_dict(test_df, target):
-    # choose a random row from the test_df
-    row = test_df.sample()
-    print("Selected row index:", row.index[0])
+def generate_obs_dict(test_binned, output):
+    """
+    Generate a single observation from the test dataset
+
+    Parameters
+    ----------
+    test_binned : pandas dataframe discretised test dataset
+    output : str target/output variable
+
+    Returns
+    -------
+    obs_dict : observation dictionary
+    """
+    # choose a random row from the test_binned
+    row = test_binned.sample()
+    # print("Selected row index:", row.index[0])
 
     # generate an obs_dict from the chosen row
     obs_dict = {}
-    for col in test_df.columns:
-        if col == target:
-            obs_dict[col] = {'bin_index': str(row[col].values[0]), 'actual_value': round(row[target].values[0],2)}
+    for col in test_binned.columns:
+        if col == output:
+            obs_dict[col] = {'bin_index': str(row[col].values[0]), 'actual_value': row[output].values[0]}
         else:
             obs_dict[col] = {'bin_index': str(row[col].values[0]), 'val': 1.0}
 
-    print("Observation dictionary:", obs_dict)
+    # print("Observation dictionary:", obs_dict)
     return obs_dict
 
-def generate_multiple_obs_dicts(test_df, num_samples, target):
+
+def generate_multiple_obs_dicts(test_binned, num_samples, output):
+    """
+    Generate num_samples observations form the test dataset
+
+    Parameters
+    ----------
+    test_binned : pandas dataframe discretised test dataset
+    num_samples : int number of samples to generate
+    output : str target/output variable
+
+    Returns
+    -------
+    obs_dicts : list of observation dictionaries
+    """
     obs_dicts = []
     for i in range(num_samples):
-        obs_dict = generate_obs_dict(test_df, target)
+        obs_dict = generate_obs_dict(test_binned, output)
         obs_dicts.append(obs_dict)
-    print("Observation dictionaries:", obs_dicts)
+    # print("Observation dictionaries:", obs_dicts)
     return obs_dicts
 
 
-def set_multiple_observations(test_df, obs_dicts, target):
+def gen_ev_list(test_binned, obs_dicts, output):
     """
     Parameters
     ----------
-    test_df : discretised test dataframe
+    test_binned : pandas dataframe discretised test dataset
     obs_dicts : list of observation dictionaries
-    target : str target/output variable   
+    output : str target/output variable   
     """
-    test_df = test_df.drop([target], axis=1) 
+    test_binned = test_binned.drop([output], axis=1) 
     all_ev_list = []
-    for obs_dict in obs_dicts:
+    for obs in obs_dicts:
         ev_list = []
-        for col in test_df.columns:
-            bin_index = obs_dict[col]['bin_index']
-            val = obs_dict[col]['val']
+        for col in test_binned.columns:
+            bin_index = obs[col]['bin_index']
+            val = obs[col]['val']
             ev_dict = {'nod':col, 'bin_index':bin_index, 'val': val}
             ev_list.append(ev_dict)
         all_ev_list.append(ev_list)
-    print("All evidence lists:", all_ev_list)
+    # print("All evidence lists:", all_ev_list)
     return all_ev_list
 
 
-def get_posteriors(join_tree, target):
+def get_posteriors(join_tree, output):
     """
-    Get the posteriors for all observations reflected in the join tree.
+    Get the posteriors for the observations included in the join tree.
 
     Parameters
     ----------
     join_tree : conditional probability table
-    target : str target/output variable
+    output : str target/output variable
     """
     obs_posteriors = {}
     predictedTargetPosteriors = []
     for node, posteriors_raw in join_tree.get_posteriors().items():
         obs_posteriors[node] = [posteriors_raw[val] for val in posteriors_raw]
-        if node == target:  # check if the observation corresponds to the specified target variable
+        if node == output:  # check if the observation corresponds to the specified target variable
             predictedTargetPosteriors = [posteriors_raw[val] for val in posteriors_raw]
 
     return obs_posteriors, predictedTargetPosteriors
 
 
-def get_all_posteriors(all_ev_list, join_tree):
+def get_all_posteriors(all_ev_list, join_tree, output):
+    """
+    Get the posteriors for all the observations in all_ev_list for the corresponding join_tree.
+
+    Parameters
+    ----------
+    all_ev_list : list of observations
+    join_tree : conditional probability table
+    output : str target/output variable
+
+    Returns
+    -------
+    obs_posteriors : dict of observations posteriors
+    predicted_posteriors : list of predicted posteriors
+    """
     obs_posteriors = {}
     predicted_posteriors = []
 
@@ -78,9 +118,8 @@ def get_all_posteriors(all_ev_list, join_tree):
             # Modify the join_tree using this case evidences
             ev4jointree = evidence(ev['nod'], ev['bin_index'], ev['val'], join_tree)
             join_tree.set_observation(ev4jointree)
-        print(observation)
         # Get the posteriors for this observation
-        aux_obs, aux_prd = get_posteriors(join_tree, "acceleration")
+        aux_obs, aux_prd = get_posteriors(join_tree, output)
 
         # Store the posteriors for this case
         for node_id, posterior in aux_obs.items():

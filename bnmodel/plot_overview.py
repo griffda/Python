@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt 
 
-
 """
 Plot results comparing the inputs and the posteriors distributions
 
@@ -11,26 +10,24 @@ by @griffda and @jhidalgosalaverri
 """
 
 
-def plot_results(posteriors, edges, prior_dist):
+def plot_results(posteriors, edges, prior_dist, inputs, outputs):
     """
     Plot the results of the inference in a figure with the prior and the posteriors
 
     Parameters
     ----------
-    posteriors : dict
-        Dictionary with the posteriors distributions
-    edges : array
-        Array with the edges of the bins
-    prior_dist : dict
-        Dictionary with the prior distributions
+    posteriors : dict Posteriors distributions
+    edges : array Edges of the bins
+    prior_dist : dict Prior distributions
+    inputs : list Input variables
+    outputs : list Output variables
 
     Returns
     -------
     ax : figure axis
-
     """
 
-    nrow = len(posteriors['mass']) # TODO: remove the hardcoded
+    nrow = len(posteriors[inputs[0]]) # TODO: this may fail if there's a single input
     ncol = len(posteriors.keys())
 
     binwidth = {}
@@ -42,7 +39,6 @@ def plot_results(posteriors, edges, prior_dist):
         bin_centers[var] = 0.5*(edges[var][1:] + edges[var][:-1])
     
     fig, ax = plt.subplots(nrow, ncol)
-    fig.suptitle('Prior and Posterior Distributions', fontsize = 10)
     ax = ax.reshape(nrow, ncol)
     colnames = list(edges.keys())
     
@@ -54,19 +50,21 @@ def plot_results(posteriors, edges, prior_dist):
                         color = 'grey', alpha = 0.7, linewidth = 0.2, edgecolor = 'black')
             j += 1
 
-    # Plot the posteriors    
+    # Plot the posteriors  
     for i in range(nrow):
         j = 0
         for var in colnames:
-            if var == 'acceleration':
+            if var in outputs:
                 colour = 'red'
-            elif var == 'force' or var == 'mass':
+            elif var in inputs:
                 colour = 'green'
             ax[i,j].bar(bin_centers[var], posteriors[var][i], width = binwidth[var],
                             color = colour, alpha = 0.2, linewidth = 0.2, edgecolor = 'black')
             j += 1
 
     # Cosmetics
+    fig.suptitle('Prior and Posterior Distributions', fontsize = 10)
+
     for i in range(nrow-1):
         j = 0
         for var in edges:
@@ -74,6 +72,7 @@ def plot_results(posteriors, edges, prior_dist):
             ax[i,j].axes.xaxis.set_ticklabels([])
             # ax[i,j].xaxis.set_tickparams(labelbottom = False)
             j += 1
+
     j = 0
     for var in edges:
         ax[-1,j].set_xlim(min(edges[var]), max(edges[var]))
