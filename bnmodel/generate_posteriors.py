@@ -1,6 +1,5 @@
-# from join_tree_population import evidence
 from bnmodel.join_tree_population import evidence
-# from discretisation import  df_test_binned
+
 
 def generate_obs_dict(test_df, target):
     # choose a random row from the test_df
@@ -26,7 +25,6 @@ def generate_multiple_obs_dicts(test_df, num_samples, target):
     print("Observation dictionaries:", obs_dicts)
     return obs_dicts
 
-# obs_dicts = generate_multiple_obs_dicts(df_test_binned, 3, 'acceleration_bins')
 
 def set_multiple_observations(test_df, obs_dicts, target):
     """
@@ -49,29 +47,6 @@ def set_multiple_observations(test_df, obs_dicts, target):
     print("All evidence lists:", all_ev_list)
     return all_ev_list
 
-# dict_names = ['force_bins', 'mass_bins']
-# all_ev_list = set_multiple_observations(df_test_binned, obs_dicts, dict_names, default_bin=5)
-
-# def extract_data_from_dict_list(dict_list, target_dict):
-#     """
-    
-#     """
-#     bin_indices = []
-#     actual_values = []
-#     for d in dict_list:
-#         for k, v in d.items():
-#             if k == target_dict:
-#                 bin_indices.append(int(v['bin_index']))
-#                 if 'actual_value' in v:
-#                     actual_values.append(v['actual_value'])
-#                 else:
-#                     actual_values.append(None)
-#     print('bin_indices:', bin_indices)
-#     print('actual_values:', actual_values)  
-#     return bin_indices, actual_values
-
-# target_dict = 'acceleration_bins'
-# bin_indices, actual_values = extract_data_from_dict_list(obs_dicts, target_dict)
 
 def get_posteriors(join_tree, target):
     """
@@ -81,56 +56,43 @@ def get_posteriors(join_tree, target):
     ----------
     join_tree : conditional probability table
     target : str target/output variable
-    
     """
-
     obs_posteriors = {}
-
-    for node, posteriors_raw in join_tree.get_posteriors().items():
-        # posteriors[obs] = [round(posteriors_raw[val],2) for val in sorted(posteriors_raw)]  # sort the posteriors by value and add them to the dictionary
-        obs_posteriors[node] = [posteriors_raw[val] for val in posteriors_raw]
-    
-    # print("Observation posteriors:", obs_posteriors)
-
     predictedTargetPosteriors = []
-
-    for node, posteriors in join_tree.get_posteriors().items():
+    for node, posteriors_raw in join_tree.get_posteriors().items():
+        obs_posteriors[node] = [posteriors_raw[val] for val in posteriors_raw]
         if node == target:  # check if the observation corresponds to the specified target variable
-            # predictedTargetPosteriors = [round(posteriors[val],2) for val in sorted(posteriors)]  # sort the posteriors by value and add them to the list
-            predictedTargetPosteriors = [posteriors[val] for val in posteriors]
-
-    # print("Predicted target posteriors:", predictedTargetPosteriors)
+            predictedTargetPosteriors = [posteriors_raw[val] for val in posteriors_raw]
 
     return obs_posteriors, predictedTargetPosteriors
 
 
-###The issue arises from having identical evidence lists. 
-# As a result, the same evidence is applied twice, leading to the same posteriors being computed for both instances. 
-# To obtain different posteriors, you need to provide distinct evidence for each case. 
-# For example, you can add a unique suffix to the evidence node names in each evidence list,
-# and need to tell 
-
 def get_all_posteriors(all_ev_list, join_tree):
-    obs_posteriors_dict = {}
-    predicted_posteriors_list = []
+    obs_posteriors = {}
+    predicted_posteriors = []
 
-    for ev_list in all_ev_list:
-        for ev_dict in ev_list:
-            ev = evidence(ev_dict['nod'], ev_dict['bin_index'], ev_dict['val'], join_tree)
-            join_tree.set_observation(ev)
-            obs_posteriors, predictedTargetPosteriors = get_posteriors(join_tree, "acceleration")
+    for observation in all_ev_list:
+        join_tree.unobserve_all()
+        # Do a duplicate of join_tree to avoid modifying the original one
+        for ev in observation:
+            # Modify the join_tree using this case evidences
+            ev4jointree = evidence(ev['nod'], ev['bin_index'], ev['val'], join_tree)
+            join_tree.set_observation(ev4jointree)
+        print(observation)
+        # Get the posteriors for this observation
+        aux_obs, aux_prd = get_posteriors(join_tree, "acceleration")
 
-        for node_id, posterior in obs_posteriors.items():
-            if node_id not in obs_posteriors_dict:
-                obs_posteriors_dict[node_id] = []
-            obs_posteriors_dict[node_id].append(posterior)
+        # Store the posteriors for this case
+        for node_id, posterior in aux_obs.items():
+            if node_id not in obs_posteriors:
+                obs_posteriors[node_id] = []
+            obs_posteriors[node_id].append(posterior)
+        predicted_posteriors.append(aux_prd)
+    
+    # Ensure that the join tree is unmodified
+    join_tree.unobserve_all()
 
-        predicted_posteriors_list.append(predictedTargetPosteriors)
-
-    print("Observation posteriors:", obs_posteriors_dict)
-    print("Predicted target posteriors:", predicted_posteriors_list)
-
-    return obs_posteriors_dict, predicted_posteriors_list
+    return obs_posteriors, predicted_posteriors
 
 # def get_posteriors(all_ev_list, join_tree):
 #     obs_posteriors_dict = {}
@@ -158,4 +120,26 @@ def get_all_posteriors(all_ev_list, join_tree):
 # obs_posteriors_dict, predicted_posteriors_list = get_posteriors(all_ev_list, join_tree)
 
 
+# dict_names = ['force_bins', 'mass_bins']
+# all_ev_list = set_multiple_observations(df_test_binned, obs_dicts, dict_names, default_bin=5)
 
+# def extract_data_from_dict_list(dict_list, target_dict):
+#     """
+    
+#     """
+#     bin_indices = []
+#     actual_values = []
+#     for d in dict_list:
+#         for k, v in d.items():
+#             if k == target_dict:
+#                 bin_indices.append(int(v['bin_index']))
+#                 if 'actual_value' in v:
+#                     actual_values.append(v['actual_value'])
+#                 else:
+#                     actual_values.append(None)
+#     print('bin_indices:', bin_indices)
+#     print('actual_values:', actual_values)  
+#     return bin_indices, actual_values
+
+# target_dict = 'acceleration_bins'
+# bin_indices, actual_values = extract_data_from_dict_list(obs_dicts, target_dict)
