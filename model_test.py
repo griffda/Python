@@ -1,7 +1,7 @@
 import bnmodel as bn
 
 #%% INPUTS
-csv_path = 'outputv3.csv'
+csv_path = 'outputv4.csv'
 test_bin_size = 0.4
 inputs = ['force', 'mass']
 output = 'acceleration'
@@ -18,7 +18,7 @@ train_binned, test_binned, bin_edges, prior_xytrn = bn.discretisation.binning_da
 
 join_tree = bn.join_tree_population.prob_dists(structure, train_binned)
 
-obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(test_binned, 10, output)
+obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(test_binned, 5, output)
 
 all_ev_list = bn.generate_posteriors.gen_ev_list(test_binned, obs_dicts, output)
 
