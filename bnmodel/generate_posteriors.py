@@ -1,7 +1,8 @@
 from bnmodel.join_tree_population import evidence
+import pandas as pd
 
 
-def generate_obs_dict(test_binned, output):
+def generate_obs_dict(test_binned, output, csv_path):
     """
     Generate a single observation from the test dataset
 
@@ -9,6 +10,7 @@ def generate_obs_dict(test_binned, output):
     ----------
     test_binned : pandas dataframe discretised test dataset
     output : str target/output variable
+    csv_path : str path to the csv input file
 
     Returns
     -------
@@ -16,13 +18,13 @@ def generate_obs_dict(test_binned, output):
     """
     # choose a random row from the test_binned
     row = test_binned.sample()
-    # print("Selected row index:", row.index[0])
+    data = pd.read_csv(csv_path)
 
     # generate an obs_dict from the chosen row
     obs_dict = {}
     for col in test_binned.columns:
         if col == output:
-            obs_dict[col] = {'bin_index': str(row[col].values[0]), 'actual_value': row[output].values[0]}
+            obs_dict[col] = {'bin_index': str(row[col].values[0]), 'actual_value': data[output][row.index.values].values[0]}
         else:
             obs_dict[col] = {'bin_index': str(row[col].values[0]), 'val': 1.0}
 
@@ -30,7 +32,7 @@ def generate_obs_dict(test_binned, output):
     return obs_dict
 
 
-def generate_multiple_obs_dicts(test_binned, num_samples, output):
+def generate_multiple_obs_dicts(test_binned, num_samples, output, csv_path):
     """
     Generate num_samples observations form the test dataset
 
@@ -39,6 +41,7 @@ def generate_multiple_obs_dicts(test_binned, num_samples, output):
     test_binned : pandas dataframe discretised test dataset
     num_samples : int number of samples to generate
     output : str target/output variable
+    csv_path : str path to the csv input file
 
     Returns
     -------
@@ -46,7 +49,7 @@ def generate_multiple_obs_dicts(test_binned, num_samples, output):
     """
     obs_dicts = []
     for i in range(num_samples):
-        obs_dict = generate_obs_dict(test_binned, output)
+        obs_dict = generate_obs_dict(test_binned, output, csv_path)
         obs_dicts.append(obs_dict)
     # print("Observation dictionaries:", obs_dicts)
     return obs_dicts

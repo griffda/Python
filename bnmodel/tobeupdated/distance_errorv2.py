@@ -199,10 +199,10 @@ def distribution_distance_error(correct_bin_locations, predicted_bin_probabiliti
         distance_errors.append(round(distance_error,3))
         norm_distance_errors.append(round(norm_distance_error*100,3)) # remove 100 to normalise
 
-        print('distance_error:', round(distance_error,3))
-        print('max def value:', bin_ranges[len(bin_ranges) - 1][1])
-        print('min def value:', bin_ranges[0][0])
-        print('normalised distance error:', round(norm_distance_error,3))
+        # print('distance_error:', round(distance_error,3))
+        # print('max def value:', bin_ranges[len(bin_ranges) - 1][1])
+        # print('min def value:', bin_ranges[0][0])
+        # print('normalised distance error:', round(norm_distance_error,3))
 
     if plot == True:
         plt.hist(norm_distance_errors, bins=15)
