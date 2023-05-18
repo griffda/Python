@@ -19,3 +19,12 @@ def remove_parenthesis(df):
     df.columns = df.columns.str.replace('(', '')
     df.columns = df.columns.str.replace(')', '')
     return df
+
+def prepare_csv(csv_path):
+    """
+    Prepare the csv file for the model
+    """
+    data = pd.read_csv(csv_path)
+    data = remove_parenthesis(data)
+    data = data.drop('run', axis = 1)
+    return data

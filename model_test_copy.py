@@ -3,7 +3,7 @@ import bnmodel as bn
 #%% INPUTS
 csv_path = 'sobol_trimmed.csv'
 test_bin_size = 0.4
-inputs = ['fdene','boundu(10)','fimp(14)','pseprmax','boundl(103)','cboot','feffcd','etaiso','pinjalw','sig_tf_case_max','aspect','boundu(2)','outlet_temp','beta','etanbi','etahtp']
+inputs = ['fdene','boundu10','fimp14','pseprmax','boundl103','cboot','feffcd','etaiso','pinjalw','sig_tf_case_max','aspect','boundu2','outlet_temp','beta','etanbi','etahtp']
 output = 'capcost'
 
 
@@ -26,17 +26,17 @@ output = 'capcost'
 
 structure = {
     'fdene':['capcost'],
-    'boundu(10)':['capcost'],
-    'fimp(14)':['capcost'],
+    'boundu10':['capcost'],
+    'fimp14':['capcost'],
     'pseprmax':['capcost'],
-    'boundl(103)':['capcost'],  
+    'boundl103':['capcost'],  
     'cboot':['capcost'],    
     'feffcd':['capcost'],   
     'etaiso':['capcost'],   
     'pinjalw':['capcost'],  
     'sig_tf_case_max':['capcost'],  
     'aspect':['capcost'],   
-    'boundu(2)':['capcost'],    
+    'boundu2':['capcost'],    
     'outlet_temp':['capcost'],  
     'beta':['capcost'], 
     'etanbi':['capcost'],   
@@ -50,16 +50,16 @@ n_obs = 5
 nbins = 30
 
 #%% Prepare data
-
+data = bn.utilities.prepare_csv(csv_path)
 
 
 #%% Run the model
-train_binned, test_binned, bin_edges, prior_xytrn = bn.discretisation.binning_data(csv_path, test_bin_size,
-                                                                                    x_cols = inputs, y_cols = [output])
+train_binned, test_binned, bin_edges, prior_xytrn = bn.discretisation.binning_data(data, test_bin_size,
+                                                                                   y_cols = [output])
 
 join_tree = bn.join_tree_population.prob_dists(structure, train_binned)
 
-obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(test_binned, n_obs, output, csv_path)
+obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(test_binned, n_obs, output, data)
 
 all_ev_list = bn.generate_posteriors.gen_ev_list(test_binned, obs_dicts, output)
 
