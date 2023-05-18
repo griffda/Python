@@ -1,19 +1,57 @@
 import bnmodel as bn
 
 #%% INPUTS
-csv_path = 'outputv4.csv'
+csv_path = 'sobol_trimmed.csv'
 test_bin_size = 0.4
-inputs = ['force', 'mass']
-output = 'acceleration'
+inputs = ['fdene','boundu(10)','fimp(14)','pseprmax','boundl(103)','cboot','feffcd','etaiso','pinjalw','sig_tf_case_max','aspect','boundu(2)','outlet_temp','beta','etanbi','etahtp']
+output = 'capcost'
+
+
+
+# structure = {
+#     'fdene':['capcost'],   
+#     'pseprmax':['capcost'],
+#     'cboot':['capcost'],
+#     'feffcd':['capcost'],
+#     'etaiso':['capcost'],
+#     'pinjalw':['capcost'],
+#     'sig_tf_case_max':['capcost'],
+#     'aspect':['capcost'],
+#     'outlet_temp':['capcost'],
+#     'beta':['capcost'],
+#     'etanbi':['capcost'],
+#     'etahtp':['capcost'],
+#     'capcost': []
+# }   
 
 structure = {
-    'mass':[],
-    'force': [],
-    'acceleration': ['force', 'mass']
+    'fdene':['capcost'],
+    'boundu(10)':['capcost'],
+    'fimp(14)':['capcost'],
+    'pseprmax':['capcost'],
+    'boundl(103)':['capcost'],  
+    'cboot':['capcost'],    
+    'feffcd':['capcost'],   
+    'etaiso':['capcost'],   
+    'pinjalw':['capcost'],  
+    'sig_tf_case_max':['capcost'],  
+    'aspect':['capcost'],   
+    'boundu(2)':['capcost'],    
+    'outlet_temp':['capcost'],  
+    'beta':['capcost'], 
+    'etanbi':['capcost'],   
+    'etahtp':['capcost'],   
+    'capcost': []   
+    
 }
 
-n_obs = 100
-nbins = 15
+
+n_obs = 5
+nbins = 30
+
+#%% Prepare data
+
+
 
 #%% Run the model
 train_binned, test_binned, bin_edges, prior_xytrn = bn.discretisation.binning_data(csv_path, test_bin_size,
@@ -38,4 +76,6 @@ distance_errors, norm_distance_errors, output_bin_means = bn.evaluate_errors.dis
 
 
 #%% Plotting
-# ax = bn.plot_overview.plot_results(obs_posteriors_dict, bin_edges, prior_xytrn, inputs, output)
+ax = bn.plot_overview.plot_results(obs_posteriors_dict, bin_edges, prior_xytrn, inputs, output)
+
+# %%
