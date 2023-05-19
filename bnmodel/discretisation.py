@@ -30,7 +30,7 @@ def binning_data(data, test_size=0.2, nbins: int = 5, x_cols=None, y_cols=None):
     x = data[x_cols]
     y = data[y_cols]
 
-    labels = [1,2,3,4,5]
+    labels = np.arange(1, nbins+1)
 
     # Define empty dictionaries
     bin_edges = {}
@@ -38,14 +38,14 @@ def binning_data(data, test_size=0.2, nbins: int = 5, x_cols=None, y_cols=None):
     
     # Apply equidistant binning to the input variables
     for col in x.columns:
-        x.loc[:, col], bin_edge_aux = pd.cut(x.loc[:, col], number_of_bins, labels=labels, retbins=True)
+        x.loc[:, col], bin_edge_aux = pd.cut(x.loc[:, col], nbins, labels=labels, retbins=True)
         bin_edges[col] = bin_edge_aux
         prior = x.loc[:, col].value_counts(normalize=True).sort_index()
         prior_xytrn[col] = np.array(prior)
 
     # Apply percentile binning to the output variable
     for col in y.columns:
-        y.loc[:, col], bin_edge_aux = pd.qcut(y.loc[:, col], number_of_bins, labels=labels, retbins=True)
+        y.loc[:, col], bin_edge_aux = pd.qcut(y.loc[:, col], nbins, labels=labels, retbins=True)
         bin_edges[col] = bin_edge_aux
         prior = y[col].value_counts(normalize=True).sort_index()
         prior_xytrn[col] = np.array(prior)
