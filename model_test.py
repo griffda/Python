@@ -24,8 +24,8 @@ data = bn.utilities.prepare_csv(csv_path)
 
 
 #%% Run the model
-train_binned, test_binned, edges, priors = bn.discretisation.binning_data(data, test_bin_size,
-                                                                                    x_cols = inputs, y_cols = [output])
+train_binned, test_binned, edges, priors = bn.discretisation.binning_data(data, test_bin_size, nbins = nbins,
+                                                                          x_cols = inputs, y_cols = [output])
 
 join_tree = bn.join_tree_population.prob_dists(structure, train_binned)
 

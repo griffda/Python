@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 
 
-def binning_data(data, test_size=0.2, x_cols=None, y_cols=None):
+def binning_data(data, test_size=0.2, nbins: int = 5, x_cols=None, y_cols=None):
     """
     Discretise the input and output data.
     Corresponds to steps 2a and 2b in Zac's thesis.
@@ -12,6 +12,7 @@ def binning_data(data, test_size=0.2, x_cols=None, y_cols=None):
     ----------
     data : pandas dataframe with all the data
     test_size : float
+    nbis : int number of bins
     x_cols : list of str input variables
     y_cols : list of str output variables. Last column of the csv file is used by default.
     TODO: change y_cols to output so it can be a single string (only one possible output)
@@ -30,7 +31,6 @@ def binning_data(data, test_size=0.2, x_cols=None, y_cols=None):
     y = data[y_cols]
 
     labels = [1,2,3,4,5]
-    number_of_bins = 5
 
     # Define empty dictionaries
     bin_edges = {}
