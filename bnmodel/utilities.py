@@ -26,5 +26,6 @@ def prepare_csv(csv_path):
     """
     data = pd.read_csv(csv_path)
     data = remove_parenthesis(data)
-    data = data.drop('run', axis = 1)
+    if 'run' in data.columns:
+        data = data.drop('run', axis = 1)
     return data
