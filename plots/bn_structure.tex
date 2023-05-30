@@ -1,0 +1,39 @@
+latex file: 
+
+%%%need to make a structure of bayesian network using latex code: 
+%%%the parent nodes need to be touching each other, not overlapping and follow a semi circle shape over the daughter one. 
+%%% the parent nodes are cboot, pseprmax, etaiso, fdene, pinjawl, beta, feffcd, sig_tf, aspect, outlet_temp.
+%%%the daughter node is cap-cost.
+%%%I need to adjust the relative positions because they are overlapping and are not in a perfecr semi circle shape.
+\begin{figure}[htbp!]
+    \centering
+    \begin{tikzpicture}[node distance=1.2cm, font=\small]
+        % Nodes
+        \node[draw, circle, draw=blue, text=black, minimum size=0.6cm] (cap-cost) {cap-cost};
+        \node[draw, circle, draw=red, text=black, above right=1cm and 1.3cm of cap-cost, minimum size=0.6cm] (pseprmax) {pseprmax};
+        \node[draw, circle, draw=red, text=black, above=1.5cm of cap-cost, minimum size=0.6cm] (beta) {beta};
+        \node[draw, circle, draw=red, text=black, above right=0.2cm and 2cm of cap-cost, minimum size=0.6cm] (fdene) {fdene};
+        \node[draw, circle, draw=red, text=black, above right=1.5cm and 0.3cm of cap-cost, minimum size=0.6cm] (feffcd) {feffcd};
+        \node[draw, circle, draw=red, text=black, above left=1.5cm and 0.3cm of cap-cost, minimum size=0.6cm] (aspect) {aspect};
+        \node[draw, circle, draw=red, text=black, left=2cm of cap-cost, minimum size=0.6cm] (outlet_temp) {outlet\_temp};
+        \node[draw, circle, draw=red, text=black, right=2cm of cap-cost, minimum size=0.6cm] (etanbi) {etanbi};
+        \node[draw, circle, draw=red, text=black, above left=0.2cm and 2cm of cap-cost] (fimp) {fimp};
+        \node[draw, circle, draw=red, text=black, above left=1.0cm and 1.5cm of cap-cost, minimum size=0.6cm] (boundu) {boundu};
+
+        % Edges
+        \draw[->] (pseprmax) -- (cap-cost);
+        \draw[->] (fdene) -- (cap-cost);
+        \draw[->] (beta) -- (cap-cost);
+        \draw[->] (feffcd) -- (cap-cost);
+        \draw[->] (fimp) -- (cap-cost);
+        \draw[->] (aspect) -- (cap-cost);
+        \draw[->] (outlet_temp) -- (cap-cost);
+        \draw[->] (etanbi) -- (cap-cost);
+        \draw[->] (boundu) -- (cap-cost);
+        
+        
+    \end{tikzpicture}
+\end{figure}
+
+
+        
