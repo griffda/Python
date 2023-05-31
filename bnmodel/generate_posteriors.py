@@ -31,7 +31,7 @@ def generate_obs_dict(test_binned, output, data):
     return obs_dict
 
 
-def generate_multiple_obs_dicts(test_binned, num_samples, output, data):
+def generate_multiple_obs_dicts(test_binned, output, data, num_samples):
     """
     Generate num_samples observations form the test dataset
 

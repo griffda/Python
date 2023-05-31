@@ -6,8 +6,6 @@ test_bin_size = 0.2
 inputs = ['fdene', 'fimp(14)', 'pseprmax', 'feffcd', 'aspect', 'boundu(2)', 'outlet_temp', 'beta', 'etanbi']
 output = 'capcost'
 
-
-
 structure = {
     'fdene':['capcost'],
     'fimp14':['capcost'],
@@ -20,7 +18,6 @@ structure = {
     'etanbi':['capcost'],  
     'capcost': []   
 }
-
 
 n_obs = 500
 nbins = 30

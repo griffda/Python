@@ -1,16 +1,16 @@
 import pandas as pd
 
-def df2struct(df, inputs, outputs):
-    """
-    In process of being generalised
-    """
-    columns = df.columns.tolist()
+def df2struct(df, inputs, output):
     structure = {}
-    for col in columns:
-        if col != 'coe_bins':
+    for col in df.columns.tolist():
+        if col in inputs:
+            structure[col] = [output]
+        elif col == output:
             structure[col] = []
-    structure['coe_bins'] = columns[:-1]
+        else:
+            structure[col] = [output]
     return structure
+
 
 def remove_parenthesis(df):
     """
@@ -29,3 +29,4 @@ def prepare_csv(csv_path):
     if 'run' in data.columns:
         data = data.drop('run', axis = 1)
     return data
+

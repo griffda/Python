@@ -1,9 +1,8 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
 import numpy as np
 
 
-def binning_data(data, test_size=0.2, nbins: int = 5, x_cols=None, y_cols=None):
+def binning_data(data, nbins: int = 5, x_cols=None, y_cols=None):
     """
     Discretise the input and output data.
     Corresponds to steps 2a and 2b in Zac's thesis.
@@ -49,17 +48,5 @@ def binning_data(data, test_size=0.2, nbins: int = 5, x_cols=None, y_cols=None):
         bin_edges[col] = bin_edge_aux
         prior = y[col].value_counts(normalize=True).sort_index()
         prior_xytrn[col] = np.array(prior)
-
-    # Split the data into training and testing sets
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42)
-    # print(y_test.head())
     
-    # Combine the binned data into a single DataFrame for each set
-    train_binned = pd.concat([x_train, y_train], axis=1)
-    test_binned = pd.concat([x_test, y_test], axis=1)
-    
-
-    ###Pybbn only reads data types as strings, so this line converts the data in the csv from int64 to string
-    train_binned = train_binned.astype(str)
-
-    return train_binned, test_binned, bin_edges, prior_xytrn
+    return x, y, bin_edges, prior_xytrn
