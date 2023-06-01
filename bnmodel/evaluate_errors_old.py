@@ -56,7 +56,7 @@ def extract_bin_ranges(variable_name, bin_dict):
     return bin_ranges
 
 
-def distribution_distance_error(correct_bin_locations, predicted_bin_probabilities, actual_values, bin_ranges):
+def distribution_distance_error(correct_bin_locations, predicted_bin_probabilities, actual_values, bin_ranges, plot=False, nbins = 10):
 
     distance_errors = []
     norm_distance_errors = []
@@ -97,41 +97,21 @@ def distribution_distance_error(correct_bin_locations, predicted_bin_probabiliti
     # Print the prediction accuracy
     #print("Prediction Accuracy: {:.2%}".format(prediction_accuracy))
 
-    return norm_distance_errors, prediction_accuracy
 
-#make new plotting function for histogram of frequency of errors
-def plot_errors(norm_distance_errors, histnbins, numFolds, prediction_accuracy, plot=False):
-    """
-    Plot the errors in a histogram.
-    Each figure contains subplots, and each subplot is a fold.
-
-    Parameters
-    ----------
-    norm_distance_errors : list of floats, normalised distance errors
-    output_bin_means : list of floats, bin means
-    target : str, name of the target variable
-    numFolds : int, number of folds
-    nbins : int, number of bins
-    
-
-    """
-    # make a subplot of histograms for every fold in the cross validation
     if plot == True:
-        fig, ax = plt.subplots(2,3, figsize=(15, 10))
-        ax = ax.ravel()
-        fig.suptitle('Normalised distance error distribution', fontsize=16)
-        fig.subplots_adjust(top=0.88)
-        for i in range(0, numFolds):
-            ax[i].hist(norm_distance_errors, bins=histnbins, linewidth=0.2, edgecolor='black', color='black')
-            #need to include fold number and prediction accuracy in the title of the subplot
-            ax[i].set_title('Fold {}, Prediction Accuracy: {:.2%}'.format(i+1, prediction_accuracy))
-            ax[i].set_xlim([0, 1])
-            ax[i].grid(True, linestyle='--', alpha=0.5)
-            ax[i].set_ylabel('Frequency')
-            ax[i].set_xlabel('Normalised distance error')
-            ax[i].set_xlim([0, 1])
-        plt.show(block=False)
-    return ax
+        fig, ax = plt.subplots()
+        # include prediction accuracy value in the title
+        ax.set_title('Normalised distance error distribution, accuracy: {:.2%}'.format(prediction_accuracy))
+        ax.grid(True, linestyle = '--', alpha = 0.5)
+        ax.set_ylabel('Frequency')
+        ax.set_xlabel('Normalised distance error')
+        ax.hist(norm_distance_errors, bins=nbins, linewidth=0.2, edgecolor='black', color='black')
+        ax.set_xlim([0, 1])
+        plt.show(block = False)
+
+    return distance_errors, norm_distance_errors, output_bin_means
+
+
 
 def expectedValue(binRanges, probabilities):
 

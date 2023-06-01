@@ -6,7 +6,7 @@ from sklearn.model_selection import KFold
 import pandas as pd 
 
 
-def k_fold_cross_validation(structure, data, output, numFolds=5, nbins=5):
+def k_fold_cross_validation(structure, data, output, numFolds, histnbins, nbins=5):
     """
         Apply k-fold cross validation to split the data into training and testing sets:
         https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.KFold.html
@@ -46,6 +46,7 @@ def k_fold_cross_validation(structure, data, output, numFolds=5, nbins=5):
         ###Pybbn only reads data types as strings, so this line converts the data in the csv from int64 to string
         train_binned = train_binned.astype(str)
 
+        #generate the join tree and the probability distributions   
         join_tree = prob_dists(structure, train_binned)
 
         obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(test_binned, output, data, n_obs)
@@ -54,7 +55,17 @@ def k_fold_cross_validation(structure, data, output, numFolds=5, nbins=5):
 
         obs_posteriors_dict, predicted_posteriors_list = bn.generate_posteriors.get_all_posteriors(all_ev_list, join_tree, output)
 
+        correct_bin_locations, actual_values = bn.evaluate_errors.get_correct_values(obs_dicts, output)
+        bin_ranges = bn.evaluate_errors.extract_bin_ranges(output, bin_edges)
+        norm_distance_errors, prediction_accuracy = bn.evaluate_errors.distribution_distance_error(correct_bin_locations,
+                                                                                                                predicted_posteriors_list,
+                                                                                                                actual_values, 
+                                                                                                                bin_ranges)
+
+        ax = bn.evaluate_errors.plot_errors(norm_distance_errors, histnbins, numFolds, prediction_accuracy, plot=True)
+        
         fold_counter += 1
 
-    #return train_binned, test_binned, bin_edges, prior_xytrn, join_tree
-    return obs_posteriors_dict, predicted_posteriors_list, obs_dicts, bin_edges, prior_xytrn
+      
+        
+    return obs_posteriors_dict, bin_edges, prior_xytrn, norm_distance_errors, prediction_accuracy, ax

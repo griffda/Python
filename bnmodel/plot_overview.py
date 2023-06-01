@@ -50,12 +50,13 @@ def plot_results(posteriors, edges, priors, inputs, outputs, obs2plot: int, axpe
                     color = 'grey', alpha = 0.7, linewidth = 0.2, edgecolor = 'black')
         
         # Plot the posterior dist
+        # need to plot the target posteriors using equidistant bins to make the plot look nice
         if var in inputs:
             colour = 'green'
         elif var in outputs:
             colour = 'red'
         ax[i,j].bar(bin_centers[var], posteriors[var][obs2plot], width = binwidth[var],
-                    color = colour, alpha = 0.7, linewidth = 0.2, edgecolor = 'black')
+                    color = colour, alpha = 0.5, linewidth = 0.2, edgecolor = 'black')
         
 
 
