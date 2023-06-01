@@ -1,11 +1,35 @@
+import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.pyplot as plt 
+import pandas as pd
 
-"""
-Plot results comparing the inputs and the posteriors distributions
+def plot_errors(norm_distance_errors, histnbins, prediction_accuracy):
+    """
+    Plot the errors in a histogram.
+    Each figure contains subplots, and each subplot is a fold.
 
-by @griffda and @jhidalgosalaverri
-"""
+    Parameters
+    ----------
+    norm_distance_errors : list of floats, normalised distance errors
+    output_bin_means : list of floats, bin means
+    target : str, name of the target variable
+    nbins : int, number of bins
+    """
+    naxes = len(norm_distance_errors)
+
+    fig, ax = plt.subplots(1, naxes)
+    fig.suptitle('Normalised distance error distribution', fontsize=16)
+
+    for i in range(naxes):
+        ax[i].hist(norm_distance_errors[i], bins=histnbins, linewidth=0.2, edgecolor='black', color='black')
+        ax[i].set_title('Fold {}, Prediction Accuracy: {:.2%}'.format(i+1, prediction_accuracy[i]))
+        ax[i].set_xlim([0, 1])
+        ax[i].grid(True, linestyle='--', alpha=0.5)
+        ax[i].set_ylabel('Frequency')
+        ax[i].set_xlabel('Normalised distance error')
+        ax[i].set_xlim([0, 1])
+    plt.show(block=False)
+    return ax
+
 
 
 def plot_results(posteriors, edges, priors, inputs, outputs, obs2plot: int, axperrow: int = 3):
@@ -57,15 +81,11 @@ def plot_results(posteriors, edges, priors, inputs, outputs, obs2plot: int, axpe
             colour = 'red'
         ax[i,j].bar(bin_centers[var], posteriors[var][obs2plot], width = binwidth[var],
                     color = colour, alpha = 0.5, linewidth = 0.2, edgecolor = 'black')
-        
-
 
         # Cosmetics
         ax[i,j].set_xlabel('Ranges')
         ax[i,j].set_ylabel('Probability')
         ax[i,j].set_title(var, fontweight="bold", fontsize = 10)
-
-
 
         j += 1
         if j == ncol:

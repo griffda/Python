@@ -31,6 +31,8 @@ def k_fold_cross_validation(structure, data, output, numFolds, histnbins, nbins=
 
     kf = KFold(n_splits=numFolds, shuffle=True, random_state=42) # 5-fold cross validation
     kf.get_n_splits(x)
+    norm_distance_errors = []
+    prediction_accuracy = []
     for train_index, test_index in kf.split(x):
         x_train, x_test = x.iloc[train_index], x.iloc[test_index]
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
@@ -57,15 +59,16 @@ def k_fold_cross_validation(structure, data, output, numFolds, histnbins, nbins=
 
         correct_bin_locations, actual_values = bn.evaluate_errors.get_correct_values(obs_dicts, output)
         bin_ranges = bn.evaluate_errors.extract_bin_ranges(output, bin_edges)
-        norm_distance_errors, prediction_accuracy = bn.evaluate_errors.distribution_distance_error(correct_bin_locations,
+        errors_aux, accuracy_aux = bn.evaluate_errors.distribution_distance_error(correct_bin_locations,
                                                                                                                 predicted_posteriors_list,
                                                                                                                 actual_values, 
                                                                                                                 bin_ranges)
+        
+        norm_distance_errors.append(errors_aux)
+        prediction_accuracy.append(accuracy_aux)
 
-        ax = bn.evaluate_errors.plot_errors(norm_distance_errors, histnbins, numFolds, prediction_accuracy, plot=True)
+        # ax = bn.evaluate_errors.plot_errors(norm_distance_errors, histnbins, numFolds, prediction_accuracy, plot=True)
         
         fold_counter += 1
 
-      
-        
-    return obs_posteriors_dict, bin_edges, prior_xytrn, norm_distance_errors, prediction_accuracy, ax
+    return obs_posteriors_dict, bin_edges, prior_xytrn, norm_distance_errors, prediction_accuracy
