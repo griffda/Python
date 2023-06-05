@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-def plot_errors(norm_distance_errors, histnbins, prediction_accuracy):
+def plot_errors(norm_distance_errors, histnbins, prediction_accuracy, av_prediction_accuracy, axperrow=3):
     """
     Plot the errors in a histogram.
     Each figure contains subplots, and each subplot is a fold.
@@ -13,13 +13,20 @@ def plot_errors(norm_distance_errors, histnbins, prediction_accuracy):
     output_bin_means : list of floats, bin means
     target : str, name of the target variable
     nbins : int, number of bins
+    axperrow : int Number of axis per row
     """
-    naxes = len(norm_distance_errors)
+    # Get the number of axes
+    nax = len(norm_distance_errors)
+    nrow = int(np.ceil(nax / axperrow))
+    ncol = axperrow
+    
+    # Create the figure and axes objects
+    fig, ax = plt.subplots(nrow, ncol, figsize=(12, 4), squeeze=False)
+    ax = ax.flatten()  # Flatten the axes array into a 1D array
+    
+    fig.suptitle('Normalised distance error distributions {:.2%}'.format(av_prediction_accuracy), fontsize=16)
 
-    fig, ax = plt.subplots(1, naxes)
-    fig.suptitle('Normalised distance error distribution', fontsize=16)
-
-    for i in range(naxes):
+    for i in range(nax):
         ax[i].hist(norm_distance_errors[i], bins=histnbins, linewidth=0.2, edgecolor='black', color='black')
         ax[i].set_title('Fold {}, Prediction Accuracy: {:.2%}'.format(i+1, prediction_accuracy[i]))
         ax[i].set_xlim([0, 1])
@@ -27,6 +34,8 @@ def plot_errors(norm_distance_errors, histnbins, prediction_accuracy):
         ax[i].set_ylabel('Frequency')
         ax[i].set_xlabel('Normalised distance error')
         ax[i].set_xlim([0, 1])
+
+    plt.tight_layout()  # Adjust the spacing between subplots
     plt.show(block=False)
     return ax
 
@@ -86,6 +95,7 @@ def plot_results(posteriors, edges, priors, inputs, outputs, obs2plot: int, axpe
         ax[i,j].set_xlabel('Ranges')
         ax[i,j].set_ylabel('Probability')
         ax[i,j].set_title(var, fontweight="bold", fontsize = 10)
+        ax[i,j].set_ylim([0, 1])
 
         j += 1
         if j == ncol:

@@ -60,7 +60,7 @@ def distribution_distance_error(correct_bin_locations, predicted_bin_probabiliti
 
     distance_errors = []
     norm_distance_errors = []
-    output_bin_means = []
+    output_bin_means = []   
 
     for i in range(0, len(bin_ranges)):
 
