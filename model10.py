@@ -1,14 +1,13 @@
 import bnmodel as bn
 
 #%% INPUTS
-csv_path = 'outputv3.csv'
+csv_path = 'st20_trimmed.csv'
+inputs = ['fdene', 'fimp(14)', 'pseprmax', 'feffcd', 'aspect', 'boundu(2)', 'outlet_temp', 'beta', 'etanbi']
+output = 'capcost'
 
-inputs = ['force', 'mass']
-output = 'acceleration'
-
-nbins = 5
+nbins = 10
 histnbins = 30
-numFolds = 2
+numFolds = 10
 
 #%% Prepare data
 data = bn.utilities.prepare_csv(csv_path)

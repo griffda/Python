@@ -25,7 +25,7 @@ def get_correct_values(obs_dicts, output):
     for d in obs_dicts:
         for k, v in d.items():
             if k == output:
-                correct_bin_locations.append(int(v['bin_index']))
+                correct_bin_locations.append(int(v['bin_index'])-1)
                 if 'actual_value' in v:
                     actual_values.append(v['actual_value'])
                 else:
@@ -60,7 +60,8 @@ def distribution_distance_error(correct_bin_locations, predicted_bin_probabiliti
 
     distance_errors = []
     norm_distance_errors = []
-    output_bin_means = []   
+    output_bin_means = []  
+    actual_bins = [] 
 
     for i in range(0, len(bin_ranges)):
 
@@ -68,31 +69,37 @@ def distribution_distance_error(correct_bin_locations, predicted_bin_probabiliti
         min_bound = bin_ranges[i][0]
 
         output_bin_means.append(((max_bound - min_bound) * 0.5) + min_bound)
+    
 
     for i in range(len(correct_bin_locations)):
         probabilities = predicted_bin_probabilities[i]
         index, value = max(enumerate(probabilities), key=operator.itemgetter(1))  # finds bin with max probability and returns it's value and index
+        
         actual_bin = correct_bin_locations[i]  # bin containing actual value
-
-        # distance between bin means
-        # distance_error = abs(output_bin_means[predicted_bin] - output_bin_means[actual_bin])
+        
+        # distance between predicted value and bin mean, D2
+        distance_error = abs(output_bin_means[index] - output_bin_means[actual_bin])
         # OR
-        # distance between actual value and bin mean
-        distance_error = abs(output_bin_means[index] - actual_values[i])
+        # distance between actual value and bin mean, D1
+        # should implement this in arguments to say d1 or d2 or both and make this an if statement
+        # distance_error = abs(output_bin_means[index] - actual_values[i])
 
         # norm_distance_error = (distance_error - bin_ranges[0][0]) / (
         # bin_ranges[len(bin_ranges) - 1][1] - bin_ranges[0][0])
         norm_distance_error = distance_error/ (bin_ranges[len(bin_ranges) - 1][1] - bin_ranges[0][0])
 
         distance_errors.append(round(distance_error,3))
+        # print(distance_errors)
         # norm_distance_errors.append(round(norm_distance_error*100,3)) # remove 100 to normalise
         norm_distance_errors.append(round(norm_distance_error,3))
+        # print(norm_distance_errors)
 
         # Calculate the average error
         average_error = sum(norm_distance_errors) / len(norm_distance_errors)
 
         # Calculate the prediction accuracy
         prediction_accuracy = 1 - average_error
+        # print(prediction_accuracy)  
 
     # Print the prediction accuracy
     #print("Prediction Accuracy: {:.2%}".format(prediction_accuracy))
