@@ -31,6 +31,7 @@ def plot_errors(norm_distance_errors, histnbins, prediction_accuracy, av_predict
         ax[i].set_title('Fold {}, Prediction Accuracy: {:.2%}'.format(i+1, prediction_accuracy[i]))
         ax[i].set_xlim([0, 1])
         ax[i].grid(True, linestyle='--', alpha=0.5)
+        ax[i].set_facecolor('whitesmoke')
         ax[i].set_ylabel('Frequency')
         ax[i].set_xlabel('Normalised distance error')
         ax[i].set_xlim([0, 1])
@@ -94,6 +95,8 @@ def plot_results(posteriors, edges, priors, inputs, outputs, obs2plot: int, axpe
         # Cosmetics
         ax[i,j].set_xlabel('Ranges')
         ax[i,j].set_ylabel('Probability')
+        ax[i,j].grid(True, linestyle = '--', alpha = 0.5)
+        ax[i,j].set_facecolor('whitesmoke')
         ax[i,j].set_title(var, fontweight="bold", fontsize = 10)
         ax[i,j].set_ylim([0, 1])
 
