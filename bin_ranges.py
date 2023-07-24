@@ -59,3 +59,46 @@ all_ev_list = [[{'nod': 'fdene', 'bin_index': '4', 'val': 1.0},
            {'nod': 'outlet_temp', 'bin_index': '1', 'val': 1.0},
            {'nod': 'beta', 'bin_index': '2', 'val': 1.0},
            {'nod': 'etanbi', 'bin_index': '2', 'val': 1.0}]]
+
+
+
+csv_path = "path/to/your/csv_file.csv"
+inputs = ['input1', 'input2', ...]  # List of input column names
+output = 'output_column'  # The output column name
+
+# Create an instance of the BNdata class
+data_obj = BNdata(csv_path, inputs, output)
+
+# Access the DataFrame using the data attribute
+data_df = data_obj.data
+
+# Use the df2struct method to get the structure dictionary
+structure_dict = data_obj.df2struct()
+
+# Create an instance of the JoinTreeBuilder class
+join_tree_builder = JoinTreeBuilder(structure, data)
+
+# Call the prob_dists method to get the join tree
+join_tree = join_tree_builder.prob_dists()
+
+# Use the evidence method to prepare evidence for the join tree
+ev = join_tree_builder.evidence('nod', 'bin_index', val, join_tree)
+
+# Assuming you have defined the necessary variables and imported the required modules
+
+# Create an instance of the ObservationGenerator class
+obs_generator = ObservationGenerator(test_binned, output, data)
+
+# Call the generate_obs_dict method to get a single observation
+obs_dict = obs_generator.generate_obs_dict()
+
+# Call the generate_multiple_obs_dicts method to get multiple observations
+num_samples = 10
+obs_dicts = obs_generator.generate_multiple_obs_dicts(num_samples)
+
+# Call the gen_ev_list method to get evidence lists from observation dictionaries
+all_ev_list = obs_generator.gen_ev_list(obs_dicts)
+
+# Assuming you have already obtained the join_tree from prob_dists function
+# Call the get_all_posteriors method to get posteriors for all observations
+obs_posteriors, predicted_posteriors = obs_generator.get_all_posteriors(all_ev_list, join_tree)
