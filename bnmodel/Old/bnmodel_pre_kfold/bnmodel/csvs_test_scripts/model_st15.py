@@ -60,9 +60,7 @@ train_binned, test_binned, bin_edges, prior_xytrn = bn.discretisation.binning_da
 join_tree = bn.join_tree_population.prob_dists(structure, train_binned)
 
 obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(test_binned, n_obs, output, data)
-
 all_ev_list = bn.generate_posteriors.gen_ev_list(test_binned, obs_dicts, output)
-
 obs_posteriors_dict, predicted_posteriors_list = bn.generate_posteriors.get_all_posteriors(all_ev_list, join_tree, output)
 
 

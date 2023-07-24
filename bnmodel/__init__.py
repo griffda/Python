@@ -5,3 +5,4 @@ import bnmodel.evaluate_errors
 import bnmodel.discretisation
 import bnmodel.cross_validate
 import bnmodel.plotting
+import bnmodel.bayesian_network

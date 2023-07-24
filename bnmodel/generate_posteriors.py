@@ -30,14 +30,13 @@ def generate_obs_dict(test_binned, output, data):
     # print("Observation dictionary:", obs_dict)
     return obs_dict
 
-def generate_multiple_obs_dicts(test_binned, output, data, num_samples):
+def generate_multiple_obs_dicts(test_binned, output, data):
     """
     Generate num_samples observations form the test dataset
 
     Parameters
     ----------
     test_binned : pandas dataframe discretised test dataset
-    num_samples : int number of samples to generate
     output : str target/output variable
     data : pandas dataframe with all the data
 
@@ -46,7 +45,7 @@ def generate_multiple_obs_dicts(test_binned, output, data, num_samples):
     obs_dicts : list of observation dictionaries
     """
     obs_dicts = []
-    for i in range(num_samples):
+    for i in range(len(test_binned)):
         obs_dict = generate_obs_dict(test_binned, output, data)
         obs_dicts.append(obs_dict)
     # print("Observation dictionaries:", obs_dicts) 
