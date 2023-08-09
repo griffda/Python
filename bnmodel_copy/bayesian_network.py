@@ -9,7 +9,7 @@ class BayesianNetwork:
         self.inputs = inputs  
         self.__load_inputs()
         if isinstance(self.inputs['output'], list):
-            self.output = self.inputs['output'][0]
+            self.inputs['output'] = self.inputs['output'][0]
 
     def __load_inputs(self):
         """
