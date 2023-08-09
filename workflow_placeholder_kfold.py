@@ -13,7 +13,7 @@ inputs = {'data': 'outputv3.csv',
           'inputs': ['force', 'mass'],
           'output': ['acceleration'],
           'nbins': 5,
-          'nfolds': 3,
+          'nfolds': 2,
           'method': 'kfold',
           'disc_prior': 'equidistant', 
           'disc_target': 'percentile'}
