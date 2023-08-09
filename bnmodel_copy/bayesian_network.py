@@ -1,29 +1,39 @@
-import bnmodel as bn
+import bnmodel_copy as bn
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import pickle
+
+# # define decorator to convert output to string
+# def convert_output_to_string(func):
+#     def wrapper(self, output, *args, **kwargs):
+#         if isinstance(output, list):
+#             output = output[0]  # Convert the list to a single string if it is a list
+#         return func(self, output, *args, **kwargs)
+#     return wrapper
 
 class BayesianNetwork:
     def __init__(self, inputs):
         self.inputs = inputs  
         self.__load_inputs()
         self.join_tree = None
-    
+
     def __load_inputs(self):
         """
         Prepare the inputs for the training
 
         """
         # Load the data
-        
+        data = bn.utilities.prepare_csv(self.inputs['data'])
 
         if self.inputs['method'] == 'uniform':
-            x, y, bin_edges, prior_xytrn = bn.discretisation.binning_data(self.inputs['data'],
+            x, y, bin_edges, prior_xytrn = bn.discretisation.binning_data(data,
                                                                           self.inputs['nbins'],
                                                                           self.inputs['inputs'],
                                                                           self.inputs['output'])
             self.bin_edges = bin_edges
             self.prior_xytrn = prior_xytrn
+            self.data = data
+    
 
             # Split the data into training and testing sets
             x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=self.inputs['train_test_split'])
@@ -40,7 +50,7 @@ class BayesianNetwork:
             # TODO: implement kfold method
             raise ValueError('Invalid method for discretisation')
 
-        self.struct = bn.utilities.df2struct(self.inputs['data'], self.inputs['inputs'], self.inputs['output'])
+        self.struct = bn.utilities.df2struct(data, self.inputs['inputs'], self.inputs['output'])
 
     def train(self):
         if self.inputs['method'] == 'uniform':
@@ -66,12 +76,12 @@ class BayesianNetwork:
                                                                                          self.join_tree,
                                                                                          self.inputs['output'])
 
-        self.test = {'obs_posteriors': obs_posteriors,
-                     'predicted_posteriors': predicted_posteriors}
+        # self.test = {'obs_posteriors': obs_posteriors,
+        #              'predicted_posteriors': predicted_posteriors}
         
         # Error evaluation
-        correct_bin_locations, actual_values = bn.evaluate_errors.get_correct_values(obs_dicts, self.test)
-        bin_ranges = bn.evaluate_errors.extract_bin_ranges(self.test, self.bin_edges)
+        correct_bin_locations, actual_values = bn.evaluate_errors.get_correct_values(obs_dicts, self.inputs['output'])
+        bin_ranges = bn.evaluate_errors.extract_bin_ranges(self.inputs['output'], self.bin_edges)
         distance_errors, norm_distance_errors, output_bin_means = bn.evaluate_errors.distribution_distance_error(correct_bin_locations,
                                                                                                                 predicted_posteriors,
                                                                                                                 actual_values,

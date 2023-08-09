@@ -43,8 +43,6 @@ def k_fold_cross_validation(structure, data, output, numFolds, histnbins, nbins=
         # Combine the binned data into a single DataFrame for each set
         train_binned = pd.concat([x_train, y_train], axis=1)
         test_binned = pd.concat([x_test, y_test], axis=1)
-
-        n_obs = len(test_binned)
     
         ###Pybbn only reads data types as strings, so this line converts the data in the csv from int64 to string
         train_binned = train_binned.astype(str)
@@ -52,7 +50,7 @@ def k_fold_cross_validation(structure, data, output, numFolds, histnbins, nbins=
         #generate the join tree and the probability distributions   
         join_tree = prob_dists(structure, train_binned)
 
-        obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(test_binned, output, data, n_obs)
+        obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(test_binned, output, data)
     
         all_ev_list = bn.generate_posteriors.gen_ev_list(test_binned, obs_dicts, output)
 
