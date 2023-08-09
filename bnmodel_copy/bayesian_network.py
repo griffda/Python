@@ -2,20 +2,14 @@ import bnmodel_copy as bn
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import pickle
-
-# # define decorator to convert output to string
-# def convert_output_to_string(func):
-#     def wrapper(self, output, *args, **kwargs):
-#         if isinstance(output, list):
-#             output = output[0]  # Convert the list to a single string if it is a list
-#         return func(self, output, *args, **kwargs)
-#     return wrapper
+from sklearn.model_selection import KFold
 
 class BayesianNetwork:
     def __init__(self, inputs):
         self.inputs = inputs  
         self.__load_inputs()
-        self.join_tree = None
+        if isinstance(self.inputs['output'], list):
+            self.output = self.inputs['output'][0]
 
     def __load_inputs(self):
         """
@@ -46,8 +40,34 @@ class BayesianNetwork:
             self.train_binned = train_binned
             self.test_binned = pd.concat([x_test, y_test], axis=1)
 
+        elif self.inputs['method'] == 'kfold':
+            self.data = data # TODO: Check if this can be out of the if
+            x, y, bin_edges, prior_xytrn = binning_data(data, nbins=nbins, y_cols=[output])
+            self.bin_edges = bin_edges
+            self.prior_xytrn = prior_xytrn
+
+            kf = KFold(n_splits=self.inputs['nfolds'], 
+                    shuffle=True, 
+                    random_state=42) 
+            kf.get_n_splits(x)
+
+            self.folds = {}
+
+            fold_counter = 0
+            for train_index, test_index in kf.split(x):
+                x_train, x_test = x.iloc[train_index], x.iloc[test_index]
+                y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+
+                # Combine the binned data into a single DataFrame for each set
+                train_binned = pd.concat([x_train, y_train], axis=1)
+                test_binned = pd.concat([x_test, y_test], axis=1)
+
+
+                fold_name = 'fold_' + str(fold_counter)
+                self.folds[fold_counter] = {'train_binned': train_binned, 'test_binned': test_binned}
+                fold_counter += 1
+
         else:
-            # TODO: implement kfold method
             raise ValueError('Invalid method for discretisation')
 
         self.struct = bn.utilities.df2struct(data, self.inputs['inputs'], self.inputs['output'])
@@ -55,44 +75,122 @@ class BayesianNetwork:
     def train(self):
         if self.inputs['method'] == 'uniform':
             self.join_tree = bn.join_tree_population.prob_dists(self.struct, self.train_binned)
-            
+
+        elif self.inputs['method'] == 'kfold':
+            for fold in self.folds:
+                self.folds[fold]['join_tree'] = bn.join_tree_population.prob_dists(self.struct, self.folds[fold]['train'])
+
         else:
-            # TODO: implement kfold method
             raise ValueError('Invalid method for discretisation')
         
     def validate(self):
-        if self.join_tree is None:
+        if hasattr(self, 'join_tree') is False:
+            raise ValueError('Model not trained yet')
+
+        if self.inputs['method'] == 'uniform':
+            # Get the posteriors for the testing subset
+            # TODO: create a run_model function. Obs_posteriors should be in a different function
+            obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(self.test_binned, 
+                                                                        self.inputs['output'], 
+                                                                        self.data)
+            all_ev_list = bn.generate_posteriors.gen_ev_list(self.test_binned,
+                                                            obs_dicts,
+                                                            self.inputs['output'])
+            obs_posteriors, predicted_posteriors = bn.generate_posteriors.get_all_posteriors(all_ev_list,
+                                                                                            self.join_tree,
+                                                                                            self.inputs['output'])
+
+            # Error evaluation
+            correct_bin_locations, actual_values = bn.evaluate_errors.get_correct_values(obs_dicts, self.inputs['output'])
+            bin_ranges = bn.evaluate_errors.extract_bin_ranges(self.inputs['output'], self.bin_edges)
+            norm_distance_errors, prediction_accuracy = bn.evaluate_errors.distribution_distance_error(correct_bin_locations,
+                                                                                                        predicted_posteriors,
+                                                                                                        actual_values,
+                                                                                                        bin_ranges)
+                                                                                                                    
+            self.errors = {'norm_distance_errors': norm_distance_errors,
+                        'prediction_accuracy': prediction_accuracy}
+        
+        elif self.inputs['method'] == 'kfold':
+            for fold in self.folds:
+                obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(self.folds[fold]['test_binned'], 
+                                                                        self.inputs['output'], 
+                                                                        self.data)
+                all_ev_list = bn.generate_posteriors.gen_ev_list(self.folds[fold]['test_binned'],
+                                                                obs_dicts,
+                                                                self.inputs['output'])
+                obs_posteriors, predicted_posteriors = bn.generate_posteriors.get_all_posteriors(all_ev_list,
+                                                                                                self.folds[fold]['join_tree'],
+                                                                                                self.inputs['output'])
+
+                # Error evaluation
+                correct_bin_locations, actual_values = bn.evaluate_errors.get_correct_values(obs_dicts, self.inputs['output'])
+                bin_ranges = bn.evaluate_errors.extract_bin_ranges(self.inputs['output'], self.bin_edges)
+                norm_distance_errors, prediction_accuracy = bn.evaluate_errors.distribution_distance_error(correct_bin_locations,
+                                                                                                            predicted_posteriors,
+                                                                                                            actual_values,
+                                                                                                            bin_ranges)
+
+                self.folds[fold]['errors'] = {'norm_distance_errors': norm_distance_errors,
+                                            'prediction_accuracy': prediction_accuracy}
+            
+
+            self.errors = {'norm_distance_errors': np.mean([self.folds[fold]['errors']['norm_distance_errors'] for fold in self.folds]),
+                        'prediction_accuracy': np.mean([self.folds[fold]['errors']['prediction_accuracy'] for fold in self.folds])}
+
+        else:
+            raise ValueError('Invalid method for discretisation')
+
+    def run_model(self, data, input_names, output_names):
+        """
+        data_path: path to csv file
+
+
+        TODO: add any inputs and outputs to the model
+        TODO: ranges for inputs (no hard evidence)
+        TODO: clean this function
+        """
+        data = bn.utilities.prepare_csv(data_path)
+
+        if hasattr(self, 'join_tree') is False:
             raise ValueError('Model not trained yet')
         
-        # Get the posteriors for the testing subset
-        # TODO: create a run_model function. Obs_posteriors should be in a different function
-        obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(self.test_binned, 
-                                                                       self.inputs['output'], 
-                                                                       self.inputs['data'])
-        all_ev_list = bn.generate_posteriors.gen_ev_list(self.test_binned,
-                                                         obs_dicts,
-                                                         self.inputs['output'])
-        obs_posteriors, predicted_posteriors = bn.generate_posteriors.get_all_posteriors(all_ev_list,
-                                                                                         self.join_tree,
-                                                                                         self.inputs['output'])
+        if self.inputs['method'] == 'uniform':
+            observations = data['input_names']
 
-        # self.test = {'obs_posteriors': obs_posteriors,
-        #              'predicted_posteriors': predicted_posteriors}
-        
-        # Error evaluation
-        correct_bin_locations, actual_values = bn.evaluate_errors.get_correct_values(obs_dicts, self.inputs['output'])
-        bin_ranges = bn.evaluate_errors.extract_bin_ranges(self.inputs['output'], self.bin_edges)
-        distance_errors, norm_distance_errors, output_bin_means = bn.evaluate_errors.distribution_distance_error(correct_bin_locations,
-                                                                                                                predicted_posteriors,
-                                                                                                                actual_values,
-                                                                                                                bin_ranges,
-                                                                                                                plot=False,
-                                                                                                                nbins=self.inputs['nbins'])
-        
-        self.errors = {'distance_errors': distance_errors,
-                       'norm_distance_errors': norm_distance_errors,
-                       'output_bin_means': output_bin_means}
-        
+            obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(observations, 
+                                                                            output_names, 
+                                                                            data)
+            all_ev_list = bn.generate_posteriors.gen_ev_list(observations,
+                                                            obs_dicts,
+                                                            output_names)
+            obs_posteriors, predicted_posteriors = bn.generate_posteriors.get_all_posteriors(all_ev_list,
+                                                                                            self.join_tree,
+                                                                                            output_names)
+
+            return predicted_posteriors
+
+        elif self.inputs['method'] == 'kfold':
+            aux = {}
+            for fold in self.folds:
+                obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(observations, 
+                                                                        output_names, 
+                                                                        data)
+                all_ev_list = bn.generate_posteriors.gen_ev_list(observations,
+                                                                obs_dicts,
+                                                                output_names)
+                obs_posteriors, predicted_posteriors = bn.generate_posteriors.get_all_posteriors(all_ev_list,
+                                                                                                self.folds[fold]['join_tree'],
+                                                                                                output_names)
+                aux[fold] = predicted_posteriors
+
+            return np.mean([aux[fold] for fold in aux], axis=0)
+
+
+        else:
+            raise ValueError('Invalid method for discretisation')
+
+
     def save(self, path):
         with open(path, 'wb') as outp:
             pickle.dump(self, outp, pickle.HIGHEST_PROTOCOL)

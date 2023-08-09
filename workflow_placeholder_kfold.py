@@ -13,10 +13,10 @@ inputs = {'data': 'outputv3.csv',
           'inputs': ['force', 'mass'],
           'output': ['acceleration'],
           'nbins': 5,
-          'method': 'uniform',
+          'nfolds': 3,
+          'method': 'kfold',
           'disc_prior': 'equidistant', 
-          'disc_target': 'percentile',
-          'train_test_split': 0.2}
+          'disc_target': 'percentile'}
 
 
 #%%

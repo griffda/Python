@@ -23,8 +23,8 @@ def get_correct_values(obs_dicts, output):
     correct_bin_locations = []
     actual_values = []
 
-    if isinstance(output, list):
-        output = output[0]  # Convert the list to a single string if it is a list
+    # if isinstance(output, list):
+    #     output = output[0]  # Convert the list to a single string if it is a list
 
     for d in obs_dicts:
         for k, v in d.items():

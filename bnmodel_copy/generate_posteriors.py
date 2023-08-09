@@ -23,8 +23,8 @@ def generate_obs_dict(test_binned, output, data):
     # generate an obs_dict from the chosen row
     obs_dict = {}
 
-    if isinstance(output, list):
-        output = output[0]  # Convert the list to a single string if it is a list
+    # if isinstance(output, list):
+    #     output = output[0]  # Convert the list to a single string if it is a list
 
     for col in test_binned.columns:
         if col == output:
@@ -51,8 +51,8 @@ def generate_multiple_obs_dicts(test_binned, output, data):
     """
     obs_dicts = []
 
-    if isinstance(output, list):
-        output = output[0]  # Convert the list to a single string if it is a list
+    # if isinstance(output, list):
+    #     output = output[0]  # Convert the list to a single string if it is a list
 
     for i in range(len(test_binned)):
         obs_dict = generate_obs_dict(test_binned, output, data)
@@ -96,8 +96,8 @@ def get_posteriors(join_tree, output):
     obs_posteriors = {}
     predictedTargetPosteriors = []
 
-    if isinstance(output, list):
-        output = output[0]  # Convert the list to a single string if it is a list
+    # if isinstance(output, list):
+    #     output = output[0]  # Convert the list to a single string if it is a list
     for node, posteriors_raw in join_tree.get_posteriors().items():
         obs_posteriors[node] = [posteriors_raw[val] for val in posteriors_raw]
         if node == output:  # check if the observation corresponds to the specified target variable
@@ -125,8 +125,8 @@ def get_all_posteriors(all_ev_list, join_tree, output):
     obs_posteriors = {}
     predicted_posteriors = []
 
-    if isinstance(output, list):
-        output = output[0]  # Convert the list to a single string if it is a list
+    # if isinstance(output, list):
+    #     output = output[0]  # Convert the list to a single string if it is a list
 
     for observation in all_ev_list:
         # join_tree.unobserve_all()
