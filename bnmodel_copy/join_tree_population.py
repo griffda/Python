@@ -21,7 +21,7 @@ def prob_dists(structure, data):
     """
     bbn = Factory.from_data(structure, data)
     join_tree = InferenceController.apply(bbn)
-    return join_tree
+    return join_tree, bbn
 
 
 def evidence(nod, bin_index, val, join_tree):

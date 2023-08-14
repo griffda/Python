@@ -2,25 +2,41 @@ import bnmodel_copy as bn
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import pickle
+import json
 from sklearn.model_selection import KFold
 import numpy as np
+import os
 
 class BayesianNetwork:
     def __init__(self, inputs):
-        self.inputs = inputs  
-        self.__load_inputs()
+        self.inputs = inputs
+        # self.__load_inputs()
+        ## CASE: load model from already built BN
+        if self.inputs['data'] != None:
+            print('model data supplied')
+            self.__load_inputs()
+        ## CASE: build new model from data supplied via BNdata and netstructure
+        else:
+            print('no model data supplied')
+            self.__load_inputs()
         if isinstance(self.inputs['output'], list):
             self.inputs['output'] = self.inputs['output'][0]
+    
+        
 
     def __load_inputs(self):
         """
         Prepare the inputs for the training
 
+        'uniform' method: this is when no k-fold cross-validation is used
+        'kfold' method: this is when k-fold cross-validation is used
+        'meta' method: this is when the model is used to predict the output of a real case
+
         """
         # Load the data
         data = bn.utilities.prepare_csv(self.inputs['data'])
 
-        if self.inputs['method'] == 'uniform':
+        if self.inputs['method'] == 'uniform': # No k-fold cross-validation
             x, y, bin_edges, prior_xytrn = bn.discretisation.binning_data(data,
                                                                           self.inputs['nbins'],
                                                                           self.inputs['inputs'],
@@ -41,7 +57,7 @@ class BayesianNetwork:
             self.train_binned = train_binned
             self.test_binned = pd.concat([x_test, y_test], axis=1)
 
-        elif self.inputs['method'] == 'kfold':
+        elif self.inputs['method'] == 'kfold': # k-fold cross-validation
             x, y, bin_edges, prior_xytrn = bn.discretisation.binning_data(data,
                                                                           self.inputs['nbins'],
                                                                           self.inputs['inputs'],
@@ -49,7 +65,8 @@ class BayesianNetwork:
             self.bin_edges = bin_edges
             self.prior_xytrn = prior_xytrn
             self.data = data 
-
+            
+            # k-fold cross-validation
             kf = KFold(n_splits=self.inputs['nfolds'], 
                     shuffle=True, 
                     random_state=42) 
@@ -58,7 +75,7 @@ class BayesianNetwork:
             self.folds = {}
 
             fold_counter = 0
-            for train_index, test_index in kf.split(x):
+            for train_index, test_index in kf.split(x): # Split the data into training and testing sets
                 x_train, x_test = x.iloc[train_index], x.iloc[test_index]
                 y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
@@ -72,13 +89,26 @@ class BayesianNetwork:
                 self.folds[fold_name] = {'train_binned': train_binned,
                                          'test_binned': test_binned}
                 fold_counter += 1
-
+            
+        elif self.inputs['method'] == 'meta': # This is when the model is used to predict the output of a real case
+            # discretise the data
+            x, y, bin_edges, prior_xytrn = bn.discretisation.binning_data(data,
+                                                                self.inputs['nbins'],
+                                                                self.inputs['inputs'],
+                                                                self.inputs['output'])
+            self.bin_edges = bin_edges
+            self.prior_xytrn = prior_xytrn
+            self.data = data
         else:
             raise ValueError('Invalid method for discretisation')
 
         self.struct = bn.utilities.df2struct(data, self.inputs['inputs'], self.inputs['output'])
 
     def train(self):
+        """
+        train the model depending on the method of validation chosen
+
+        """
         if self.inputs['method'] == 'uniform':
             self.join_tree = bn.join_tree_population.prob_dists(self.struct, self.train_binned)
 
@@ -90,6 +120,10 @@ class BayesianNetwork:
             raise ValueError('Invalid method for discretisation')
         
     def validate(self):
+        """
+        validate the model depending on the method of validation chosen
+
+        """
         if self.inputs['method'] == 'uniform':
             # Get the posteriors for the testing subset
             # TODO: create a run_model function. Obs_posteriors should be in a different function
@@ -138,30 +172,58 @@ class BayesianNetwork:
                                             'prediction_accuracy': prediction_accuracy}
             
 
-            self.errors = {'norm_distance_errors': np.mean([self.folds[fold]['errors']['norm_distance_errors'] for fold in self.folds]),
-                        'prediction_accuracy': np.mean([self.folds[fold]['errors']['prediction_accuracy'] for fold in self.folds])}
+            # self.errors = {'norm_distance_errors': np.mean([self.folds[fold]['errors']['norm_distance_errors'] for fold in self.folds]),
+            #             'prediction_accuracy': np.mean([self.folds[fold]['errors']['prediction_accuracy'] for fold in self.folds])}
 
         else:
             raise ValueError('Invalid method for discretisation')
 
-    def run_model(self, data_path, input_names, output_names):
+
+    def save(self, path): #this is where we want to save the join_tree
         """
-        data_path: path to csv file
+        Save the model to a pickle file or json file - need to decide which one
 
-        1. Get in what bin are lying the inputs
-        2. Pass it to the join tree
-        3. Get the posteriors (and average in the case of the kfold)
+        """
+        # Convert the JoinTree object to a serializable format
+        join_tree_dict = self.join_tree.to_dict()
 
+
+        path = os.path.join('model_json.txt')
+        with open (path, 'w') as fp:
+            json.dump(join_tree_dict, fp,ensure_ascii=False)  
+        
+        with open (path('bin_ranges.txt'), 'w') as fp:
+            json.dump(self.bin_edges, fp,ensure_ascii=False)
+
+
+        with open(path, 'wb') as outp:
+            pickle.dump(self, outp, pickle.HIGHEST_PROTOCOL)
+
+    def run_model(self):
+        """
+        data_path: path to csv file - it should not need this. 
+
+        what to get out: 
+        1. posteriors based on evidence
+
+        what needs to go in:
+        1. data path
+        2. join_tree from the training
+        3. evidence (inputs)
+        4. output (to get the posteriors)
+        
 
         TODO: add any inputs and outputs to the model
         TODO: ranges for inputs (no hard evidence)
         TODO: clean this function
         """
-        data = bn.utilities.prepare_csv(data_path)
-        observations = data[input_names]
 
-        if isinstance(output_names, list):
-            output_names = output_names[0]
+        # Load the data - I don't think this is needed because it is in the load inputs function
+        # data = bn.utilities.prepare_csv(data_path)
+        
+
+        # specify structure - I don't think this is needed because it is in the load inputs function
+        # struct = bn.utilities.df2struct(self.data, self.inputs['inputs'], self.inputs['output'])
 
         if self.inputs['method'] == 'uniform':
             pass
@@ -169,10 +231,20 @@ class BayesianNetwork:
         elif self.inputs['method'] == 'kfold':
             pass
 
+        elif self.inputs['method'] == 'meta':
+            # load the evidence
+            observations = self.inputs['evidence']
+            # load the join tree from json file
+            with open(self.inputs['join_tree_path'], 'r') as json_file:
+                self.join_tree = json.load(json_file)
+            # load the bin edges from json file
+            with open(self.inputs['bin_edges_path'], 'r') as jf:
+                self.bin_edges = json.load(jf)
+            
+            # update the join tree with the evidence
+            obs_posteriors, predicted_posteriors = bn.generate_posteriors.get_all_posteriors(observations, self.join_tree, self.inputs['output'])
+            # plot the posteriors
+            bn.plotting.plot_results(predicted_posteriors, self.bin_edges, self.prior_xytrn, self.inputs['inputs'],  self.inputs['output'])
+
         else:
-            raise ValueError('Invalid method for discretisation')
-
-
-    def save(self, path):
-        with open(path, 'wb') as outp:
-            pickle.dump(self, outp, pickle.HIGHEST_PROTOCOL)
+            raise ValueError('Invalid method')

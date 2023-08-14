@@ -146,7 +146,7 @@ def get_all_posteriors(all_ev_list, join_tree, output):
         predicted_posteriors.append(aux_prd)
     
     # Ensure that the join tree is unmodified
-    # join_tree.unobserve_all()
+    join_tree.unobserve_all()
 
     return obs_posteriors, predicted_posteriors
 

@@ -1,8 +1,4 @@
 from bnmodel_copy.bayesian_network import BayesianNetwork
-import bnmodel_copy as bn
-from sklearn.model_selection import train_test_split
-import pandas as pd
-import pickle
 
 # 1. Load the inputs
 # data
@@ -16,7 +12,12 @@ inputs = {'data': 'outputv3.csv',
           'method': 'uniform',
           'disc_prior': 'equidistant', 
           'disc_target': 'percentile',
-          'train_test_split': 0.2}
+          'train_test_split': 0.2,
+          'evidence': [{'nod':'force', 'bin_index': 2, 'val': 1.0},
+                       {'nod':'mass', 'bin_index': 2, 'val': 1.0}],
+          'join_tree_path': 'join_tree_json.txt',
+          'bin_edges_path': 'bin_edges_json.txt',
+          }
 
 
 #%%
@@ -33,8 +34,12 @@ model.train()
 model.validate()
 
 # 4. Save the model
+#%%
+model.save('model_json.txt')
 
 # 5. Run your own case
+
+model.run_model()
 
 
 
