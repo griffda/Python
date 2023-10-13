@@ -1,5 +1,9 @@
 import bnmodel_copy as bn
+from bnmodel_copy.join_tree_population import evidence
+from pybbn.pptc.inferencecontroller import InferenceController
 from sklearn.model_selection import train_test_split
+from pybbn.graph.jointree import JoinTree
+from pybbn.graph.jointree import Evidence, EvidenceBuilder, EvidenceType
 import pandas as pd
 import pickle
 import json
@@ -33,7 +37,7 @@ class BayesianNetwork:
         'meta' method: this is when the model is used to predict the output of a real case
 
         """
-        # Load the data
+        # If model data is supplied, load the data
         data = bn.utilities.prepare_csv(self.inputs['data'])
 
         if self.inputs['method'] == 'uniform': # No k-fold cross-validation
@@ -99,6 +103,9 @@ class BayesianNetwork:
             self.bin_edges = bin_edges
             self.prior_xytrn = prior_xytrn
             self.data = data
+            #concatenate inputd and outputs to create a single dataframe
+            self.train_binned = pd.concat([x, y], axis=1)
+            self.train_binned = self.train_binned.astype(str)
         else:
             raise ValueError('Invalid method for discretisation')
 
@@ -110,12 +117,14 @@ class BayesianNetwork:
 
         """
         if self.inputs['method'] == 'uniform':
-            self.join_tree = bn.join_tree_population.prob_dists(self.struct, self.train_binned)
+            self.join_tree, self.bbn = bn.join_tree_population.prob_dists(self.struct, self.train_binned)
 
         elif self.inputs['method'] == 'kfold':
             for fold in self.folds:
-                self.folds[fold]['join_tree'] = bn.join_tree_population.prob_dists(self.struct, self.folds[fold]['train_binned'])
-
+                self.folds[fold]['join_tree'], self.bbn = bn.join_tree_population.prob_dists(self.struct, self.folds[fold]['train_binned'])
+        elif self.inputs['method'] == 'meta': #need to add a section for meta where we use all the data to train the model and no validation is done
+            #populate the join tree
+            self.join_tree, self.bbn = bn.join_tree_population.prob_dists(self.struct, self.train_binned)
         else:
             raise ValueError('Invalid method for discretisation')
         
@@ -136,7 +145,8 @@ class BayesianNetwork:
             obs_posteriors, predicted_posteriors = bn.generate_posteriors.get_all_posteriors(all_ev_list,
                                                                                             self.join_tree,
                                                                                             self.inputs['output'])
-
+            # self.obs_posteriors = obs_posteriors
+            self.all_ev_list = all_ev_list
             # Error evaluation
             correct_bin_locations, actual_values = bn.evaluate_errors.get_correct_values(obs_dicts, self.inputs['output'])
             bin_ranges = bn.evaluate_errors.extract_bin_ranges(self.inputs['output'], self.bin_edges)
@@ -159,7 +169,7 @@ class BayesianNetwork:
                 obs_posteriors, predicted_posteriors = bn.generate_posteriors.get_all_posteriors(all_ev_list,
                                                                                                 self.folds[fold]['join_tree'],
                                                                                                 self.inputs['output'])
-
+                
                 # Error evaluation
                 correct_bin_locations, actual_values = bn.evaluate_errors.get_correct_values(obs_dicts, self.inputs['output'])
                 bin_ranges = bn.evaluate_errors.extract_bin_ranges(self.inputs['output'], self.bin_edges)
@@ -181,23 +191,29 @@ class BayesianNetwork:
 
     def save(self, path): #this is where we want to save the join_tree
         """
-        Save the model to a pickle file or json file - need to decide which one
+        Saves the join_tree to a json file
+        Saves the bin_edges to a json file 
+        Saves the model to a pickle file or json file - need to decide which one
 
         """
         # Convert the JoinTree object to a serializable format
-        join_tree_dict = self.join_tree.to_dict()
+        with open(self.inputs['save_join_tree_path'], 'w') as f:
+            d = JoinTree.to_dict(self.join_tree, self.bbn) #self.bbn is the bayesian network object 
+            j = json.dumps(d, sort_keys=True, indent=2)
+            f.write(j)
 
-
-        path = os.path.join('model_json.txt')
-        with open (path, 'w') as fp:
-            json.dump(join_tree_dict, fp,ensure_ascii=False)  
         
-        with open (path('bin_ranges.txt'), 'w') as fp:
-            json.dump(self.bin_edges, fp,ensure_ascii=False)
+        # Convert NumPy arrays to lists in the dictionary
+        bin_edges_serializable = {key: self.bin_edges[key].tolist() for key in self.bin_edges}
 
+        # Save bin_ranges as JSON
+        bin_ranges_path = os.path.join(path, self.inputs['save_bin_edges_path'])
+        with open(bin_ranges_path, 'w') as bins_json:
+            json.dump(bin_edges_serializable, bins_json, ensure_ascii=False, indent=4)
 
-        with open(path, 'wb') as outp:
-            pickle.dump(self, outp, pickle.HIGHEST_PROTOCOL)
+        # Save the model to a pickle file
+        # with open(path, 'wb') as outp:
+        #     pickle.dump(self, outp, pickle.HIGHEST_PROTOCOL)
 
     def run_model(self):
         """
@@ -217,14 +233,7 @@ class BayesianNetwork:
         TODO: ranges for inputs (no hard evidence)
         TODO: clean this function
         """
-
-        # Load the data - I don't think this is needed because it is in the load inputs function
-        # data = bn.utilities.prepare_csv(data_path)
-        
-
-        # specify structure - I don't think this is needed because it is in the load inputs function
-        # struct = bn.utilities.df2struct(self.data, self.inputs['inputs'], self.inputs['output'])
-
+        # ask which method is used from inputs
         if self.inputs['method'] == 'uniform':
             pass
 
@@ -233,18 +242,68 @@ class BayesianNetwork:
 
         elif self.inputs['method'] == 'meta':
             # load the evidence
-            observations = self.inputs['evidence']
-            # load the join tree from json file
-            with open(self.inputs['join_tree_path'], 'r') as json_file:
-                self.join_tree = json.load(json_file)
-            # load the bin edges from json file
-            with open(self.inputs['bin_edges_path'], 'r') as jf:
-                self.bin_edges = json.load(jf)
+            # observations = self.inputs['evidence']
             
-            # update the join tree with the evidence
-            obs_posteriors, predicted_posteriors = bn.generate_posteriors.get_all_posteriors(observations, self.join_tree, self.inputs['output'])
-            # plot the posteriors
-            bn.plotting.plot_results(predicted_posteriors, self.bin_edges, self.prior_xytrn, self.inputs['inputs'],  self.inputs['output'])
+            # load the join tree from json file
+            with open(self.inputs['load_join_tree_path'], 'r') as f:
+                j = f.read()
+                d = json.loads(j)
+                jt = JoinTree.from_dict(d)
+                join_tree = InferenceController.apply_from_serde(jt)
+                
+            # load the bin edges from json file
+            with open(self.inputs['load_bin_edges_path'], 'r') as json_file:
+                bin_edges = json.load(json_file)
 
+            if self.inputs['evidence'] != None: #this is when we want to run with hard evidence
+                observations = self.inputs['evidence']
+                # inference using the evidence supplied in the inputs
+                for observation in observations:
+                    print(observation)
+                    node_name = observation['nod']
+                    bin_index = observation['bin_index']
+                    value = observation['val']
+                    ev4jointree = bn.join_tree_population.evidence(node_name, int(bin_index), value, join_tree)
+                    join_tree.set_observation(ev4jointree)
+                    join_tree.unobserve_all
+                    self.join_tree = join_tree
+                # update the join tree with the evidence
+                aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
+                self.obs_posteriors = aux_obs
+    
+                # plot the posteriors
+                bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], 5)
+            
+
+            else: #this is when we want to run with soft evidence across multiple bins
+                # Define evidence for multiple bins on the same node
+                evidence = {
+                    'capcost': [1.0, 1.0, 1.0, 0.0, 0.0, 0.0],
+                    # Add more nodes and evidence values as needed
+                }
+
+                # evidence = self.inputs['evidence2']
+
+                # Loop through the evidence dictionary and set evidence for each node
+                for node_name, values in evidence.items():
+                    node = join_tree.get_bbn_node_by_name(node_name)
+                    if node:
+                        for bin_index, value in enumerate(values):
+                            evidence_builder = EvidenceBuilder().with_node(node).with_type(EvidenceType.OBSERVATION)
+                            evidence_builder = evidence_builder.with_evidence(bin_index, value)
+                            evidence = evidence_builder.build()
+                            join_tree.set_observation(evidence)
+                            join_tree.unobserve_all
+                            self.join_tree = join_tree
+                    else:
+                        print(f"Node '{node_name}' not found in the join tree.")
+                
+                aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
+                self.obs_posteriors = aux_obs
+
+                join_tree.update_evidences([evidence])
+
+                # plot the posteriors
+                bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.inputs['inputs'], self.inputs['output'])
         else:
             raise ValueError('Invalid method')

@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 
@@ -42,7 +43,7 @@ def plot_errors(norm_distance_errors, histnbins, prediction_accuracy, av_predict
 
 
 
-def plot_results(posteriors, edges, priors, inputs, outputs, obs2plot: int, axperrow: int = 3):
+def plot_training(posteriors, edges, priors, inputs, outputs, obs2plot: int, axperrow: int = 5):
     """
     Plot the results of the inference in a figure with the prior and the posteriors
 
@@ -111,3 +112,76 @@ def plot_results(posteriors, edges, priors, inputs, outputs, obs2plot: int, axpe
     plt.tight_layout()
     return ax      
 
+
+def plot_meta(posteriors, edges, priors, inputs, outputs, axperrow: int = 3):
+    """
+    Plot the results of the meta model inference in a figure showing posteriors from observations
+
+    Parameters
+    ----------
+    posteriors : dict Posteriors distributions
+    edges : array Edges of the bins
+    inputs : list Input variables
+    outputs : list Output variables
+
+    Returns
+    -------
+    ax : figure axis
+    """
+    # Get the bins parameters for all variables
+    binwidth = {}
+    bin_centers = {}
+    for var in edges:
+        edges[var] = np.array(edges[var])
+        binwidth[var] = edges[var][1:]-edges[var][:-1]
+        bin_centers[var] = 0.5*(edges[var][1:] + edges[var][:-1])
+
+    # Get the number of axis
+    nax = len(posteriors)
+    nrow = int(np.ceil(nax/axperrow))
+    ncol = axperrow
+    
+    fig, ax = plt.subplots(nrow, ncol, squeeze=False)
+    ax.reshape((nrow, axperrow))
+    colnames = list(edges.keys())
+
+    i = 0
+    j = 0
+    for var in colnames:
+
+        ax[i, j].bar(bin_centers[var], priors[var], width=binwidth[var],
+                     color='grey', alpha=0.7, linewidth=0.2, edgecolor='black')
+
+        # Plot the posterior dist
+        # need to plot the target posteriors using equidistant bins to make the plot look nice
+        if var in inputs:
+            colour = 'green'
+        elif var in outputs:
+            colour = 'red'
+        ax[i, j].bar(bin_centers[var], posteriors[var], width=binwidth[var],
+                     color=colour, alpha=0.5, linewidth=0.2, edgecolor='black')
+
+        # Cosmetics
+        ax[i, j].grid(True, linestyle='--', alpha=0.5)
+        ax[i, j].set_facecolor('whitesmoke')
+        ax[i, j].set_title(var, fontweight="bold", fontsize=10)
+        ax[i, j].set_ylim([0, 1])
+        ax[i, j].xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+
+        # Set x-axis label for the bottom row
+        if i == nrow - 1:
+            ax[i, j].set_xlabel('Ranges')
+
+        # Set y-axis label for the leftmost column
+        if j == 0:
+            ax[i, j].set_ylabel('Probability')
+
+        j += 1
+        if j == ncol:
+            j = 0
+            i += 1
+
+    title = 'Prior and Posterior Distributions'  #+str(obs2plot)
+    fig.suptitle(title, fontsize=10)
+    plt.show(block=False)
+    plt.tight_layout()

@@ -13,34 +13,33 @@ inputs = {'data': 'outputv3.csv',
           'disc_prior': 'equidistant', 
           'disc_target': 'percentile',
           'train_test_split': 0.2,
-          'evidence': [{'nod':'force', 'bin_index': 2, 'val': 1.0},
-                       {'nod':'mass', 'bin_index': 2, 'val': 1.0}],
-          'join_tree_path': 'join_tree_json.txt',
-          'bin_edges_path': 'bin_edges_json.txt',
+          'evidence': [{'nod':'force', 'bin_index': '3', 'val': 1.0},
+                       {'nod':'mass', 'bin_index': '5', 'val': 1.0}],
+          'join_tree_path': 'simple-join-tree.json',
+          'bin_edges_path': 'bin_ranges.json',
           }
 
 
 #%%
+# 1. Load the inputsobs
 model = BayesianNetwork(inputs)
 
 #%%
 # 2. Train the model 
 model.train()
 
-# join_tree = bn.join_tree_population.prob_dists(model.struct, model.train_binned)
-
 #%%
 # 3. Cross-validate the model
 model.validate()
 
-# 4. Save the model
+
 #%%
-model.save('model_json.txt')
+# 4. Save the model
+model.save('')
 
+#%%
 # 5. Run your own case
-
 model.run_model()
-
 
 
 # %%
