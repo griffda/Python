@@ -52,13 +52,18 @@ def binning_data(data, nbins = None, x_cols=None, y_cols=None):
     
     # Apply equidistant binning to the input variables
     for col in x.columns:
-        x.loc[:, col], bin_edge_aux = pd.cut(x.loc[:, col], bins=int(input_nbins), labels=labels_input, retbins=True)
+        # x.loc[:, col], bin_edge_aux = pd.cut(x.loc[:, col], bins=int(input_nbins), labels=labels_input, retbins=True)
+        x.loc[:, col], bin_edge_aux = pd.qcut(x.loc[:, col], q=int(input_nbins), labels=labels_input, retbins=True)
+
         bin_edges[col] = bin_edge_aux
         prior = x.loc[:, col].value_counts(normalize=True).sort_index()
         prior_xytrn[col] = np.array(prior)
 
     # Apply percentile binning to the output variable
+    
     for col in y.columns:
+        # Add a small random noise to the data
+        # y.loc[:, col] = y.loc[:, col] + np.random.uniform(-0.0001, 0.0001, size=len(y))
         y.loc[:, col], bin_edge_aux = pd.qcut(y.loc[:, col], q=int(output_nbins), labels=labels_output, retbins=True)
         bin_edges[col] = bin_edge_aux
         prior = y[col].value_counts(normalize=True).sort_index()

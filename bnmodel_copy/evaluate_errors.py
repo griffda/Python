@@ -63,7 +63,7 @@ def extract_bin_ranges(variable_name, bin_dict):
 
 
 
-def distribution_distance_error(correct_bin_locations, predicted_bin_probabilities, actual_values, bin_ranges):
+# def distribution_distance_error(correct_bin_locations, predicted_bin_probabilities, actual_values, bin_ranges):
 
     distance_errors = []
     norm_distance_errors = []
@@ -85,11 +85,11 @@ def distribution_distance_error(correct_bin_locations, predicted_bin_probabiliti
         actual_bin = correct_bin_locations[i]  # bin containing actual value
         
         # distance between predicted value and bin mean, D2
-        distance_error = abs(output_bin_means[index] - output_bin_means[actual_bin])
+        # distance_error = abs(output_bin_means[index] - output_bin_means[actual_bin])
         # OR
         # distance between actual value and bin mean, D1
         # should implement this in arguments to say d1 or d2 or both and make this an if statement
-        # distance_error = abs(output_bin_means[index] - actual_values[i])
+        distance_error = abs(output_bin_means[index] - actual_values[i])
 
         # norm_distance_error = (distance_error - bin_ranges[0][0]) / (
         # bin_ranges[len(bin_ranges) - 1][1] - bin_ranges[0][0])
@@ -110,6 +110,47 @@ def distribution_distance_error(correct_bin_locations, predicted_bin_probabiliti
 
     # Print the prediction accuracy
     #print("Prediction Accuracy: {:.2%}".format(prediction_accuracy))
+
+    return norm_distance_errors, prediction_accuracy
+
+def distribution_distance_error(correct_bin_locations, predicted_bin_probabilities, actual_values, bin_ranges, error_type='D1'):
+    """
+    error_type: str, 'D1' or 'D2'
+        'D1' - distance between actual value and bin mean
+        'D2' - distance between predicted value and bin mean
+    """
+
+    distance_errors = []
+    norm_distance_errors = []
+    output_bin_means = []  
+    actual_bins = [] 
+
+    for i in range(0, len(bin_ranges)):
+        max_bound = bin_ranges[i][1]
+        min_bound = bin_ranges[i][0]
+        output_bin_means.append(((max_bound - min_bound) * 0.5) + min_bound)
+    
+    for i in range(len(correct_bin_locations)):
+        probabilities = predicted_bin_probabilities[i]
+        index, value = max(enumerate(probabilities), key=operator.itemgetter(1))  # finds bin with max probability and returns it's value and index
+        actual_bin = correct_bin_locations[i]  # bin containing actual value
+
+        if error_type == 'D1':
+            distance_error = abs(output_bin_means[index] - actual_values[i])
+        elif error_type == 'D2':
+            distance_error = abs(output_bin_means[index] - output_bin_means[actual_bin])
+        else:
+            raise ValueError("Invalid error_type. Choose 'D1' or 'D2'.")
+
+        norm_distance_error = distance_error/ (bin_ranges[len(bin_ranges) - 1][1] - bin_ranges[0][0])
+        distance_errors.append(round(distance_error,3))
+        norm_distance_errors.append(round(norm_distance_error,3))
+
+        # Calculate the average error
+        average_error = sum(norm_distance_errors) / len(norm_distance_errors)
+
+        # Calculate the prediction accuracy
+        prediction_accuracy = 1 - average_error
 
     return norm_distance_errors, prediction_accuracy
 

@@ -2,8 +2,15 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
+from mpl_toolkits.mplot3d import Axes3D
+from scipy.interpolate import griddata
+from matplotlib.ticker import LinearLocator
+from matplotlib import cm
+import pickle
+import seaborn as sns
 
-def plot_errors(norm_distance_errors, histnbins, prediction_accuracy, av_prediction_accuracy, axperrow=3):
+
+def plot_errors(norm_distance_errors, histnbins, prediction_accuracy, av_prediction_accuracy, axperrow=2):
     """
     Plot the errors in a histogram.
     Each figure contains subplots, and each subplot is a fold.
@@ -13,8 +20,9 @@ def plot_errors(norm_distance_errors, histnbins, prediction_accuracy, av_predict
     norm_distance_errors : list of floats, normalised distance errors
     output_bin_means : list of floats, bin means
     target : str, name of the target variable
-    nbins : int, number of bins
+    histnbins : int, number of bins for the histogram (kfoldnbins)
     axperrow : int Number of axis per row
+
     """
     # Get the number of axes
     nax = len(norm_distance_errors)
@@ -41,6 +49,143 @@ def plot_errors(norm_distance_errors, histnbins, prediction_accuracy, av_predict
     plt.show(block=False)
     return ax
 
+
+
+def plot_sensitivity_analysis(results):#3D scatter plot of sensitivity analysis
+    with open('sa_results.pkl', 'rb') as f:
+        results = pickle.load(f)
+    bin_configs = list(results.keys())
+    nbins_inputs = [results[config][0] for config in bin_configs]
+    nbins_outputs = [results[config][1] for config in bin_configs]
+    accuracies = [results[config][2] for config in bin_configs]
+    
+    fig = plt.figure(figsize=(10, 6))
+    ax = fig.add_subplot(111, projection='3d')
+    
+    ax.scatter(nbins_inputs, nbins_outputs, accuracies)
+    ax.set_xlabel('Number of bins for inputs')
+    ax.set_ylabel('Number of bins for outputs')
+    ax.set_zlabel('Prediction accuracy')
+    
+    plt.show()
+
+def plot_sensitivity_analysis(results):#2D line plot of sensitivity analysis, 2 subplots, change to scatter plot 
+    bin_configs = list(results.keys())
+    nbins_inputs = [results[config][0] for config in bin_configs]
+    nbins_outputs = [results[config][1] for config in bin_configs]
+    accuracies = [results[config][2] for config in bin_configs]
+    
+    plt.figure(figsize=(10, 6))
+    
+    plt.subplot(1, 2, 1)
+    plt.plot(nbins_inputs, accuracies)
+    plt.xlabel('Number of bins for inputs')
+    plt.ylabel('Prediction accuracy')
+    
+    plt.subplot(1, 2, 2)
+    plt.plot(nbins_outputs, accuracies)
+    plt.xlabel('Number of bins for outputs')
+    plt.ylabel('Prediction accuracy')
+    
+    plt.tight_layout()
+    plt.show()
+
+def plot_sensitivity_analysis(results):#3D surface plot of sensitivity analysis
+    with open('sa_results5k.pkl', 'rb') as f:
+        results = pickle.load(f)
+    # Convert dictionary to DataFrame
+    data = pd.DataFrame(results.values(), columns=['inputs', 'outputs', 'accuracy'])
+
+    # Convert accuracy to percentage
+    data['accuracy'] = data['accuracy'] * 100
+
+    # Create grid values first.
+    xi = np.linspace(data['inputs'].min(), data['inputs'].max(), 100)
+    yi = np.linspace(data['outputs'].min(), data['outputs'].max(), 100)
+    xi, yi = np.meshgrid(xi, yi)
+
+    # Interpolate onto the grid
+    zi = griddata((data['inputs'], data['outputs']), data['accuracy'], (xi, yi), method='cubic')
+
+    # Create a figure for plotting a 3D surface plot
+    fig = plt.figure(figsize=(10, 6))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Create a 3D surface plot
+    surf = ax.plot_surface(xi, yi, zi, rstride=1, cstride=1, cmap=plt.cm.coolwarm, linewidth=0.5, antialiased=True)
+
+    # Add a colorbar
+    fig.colorbar(surf, ax=ax, label='Prediction accuracy (%)')
+    #increase space between colour bar and plot
+    fig.subplots_adjust(right=1)
+
+    # Set labels
+    ax.set_xlabel('Number of bins for inputs', fontsize=14)
+    ax.set_ylabel('Number of bins for outputs', fontsize=14)
+    ax.set_zlabel('Prediction accuracy (%)', fontsize=14)
+    ax.set_title('Bin-configuration sensitivity analysis', fontsize=16)
+    ax.invert_xaxis()
+
+    # Show the plot
+    plt.show()
+
+def plot_sensitivity_analysis(results):#2D contour plot of sensitivity analysis
+    # Convert dictionary to DataFrame
+    data = pd.DataFrame(results.values(), columns=['inputs', 'outputs', 'accuracy'])
+
+    # Convert accuracy to percentage
+    data['accuracy'] = data['accuracy'] * 100
+
+    # Pivot the DataFrame
+    pivot_table = data.pivot('inputs', 'outputs', 'accuracy')
+
+    # Create a figure and axes
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Create a contour plot
+    contour = ax.contourf(pivot_table.columns, pivot_table.index, pivot_table.values)
+
+    # Add a colorbar
+    fig.colorbar(contour, ax=ax, label='Prediction accuracy (%)')
+
+    # Invert y-axis
+    #ax.invert_yaxis()
+
+    # Set labels
+    ax.set_xlabel('Number of bins for outputs')
+    ax.set_ylabel('Number of bins for inputs')
+    ax.set_title('Bin-configuration sensitivity analysis')
+
+    # Show the plot
+    plt.show()
+
+
+def plot_sensitivity_analysis(results):#2D heatmap plot of sensitivity analysis
+    # Convert dictionary to DataFrame
+    data = pd.DataFrame(results.values(), columns=['inputs', 'outputs', 'accuracy'])
+
+    # Convert accuracy to percentage
+    data['accuracy'] = data['accuracy'] * 100
+
+    # Pivot the DataFrame
+    pivot_table = data.pivot('inputs', 'outputs', 'accuracy')
+
+    # Create a figure and axes
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Create a heatmap with a labeled colorbar
+    sns.heatmap(pivot_table, annot=True, fmt=".2f", cbar_kws={'label': 'Prediction accuracy (%)'}, ax=ax)
+
+    # Invert y-axis
+    ax.invert_yaxis()
+
+    # Set labels
+    ax.set_xlabel('Number of bins for outputs')
+    ax.set_ylabel('Number of bins for inputs')
+    ax.set_title('Bin-configuration sensitivity analysis')
+
+    # Show the plot
+    plt.show()
 
 
 def plot_training(posteriors, edges, priors, inputs, outputs, obs2plot: int, axperrow: int = 5):

@@ -10,22 +10,24 @@ import json
 from sklearn.model_selection import KFold
 import numpy as np
 import os
+import json
 
 class BayesianNetwork:
     def __init__(self, inputs):
-        self.inputs = inputs
-        # self.__load_inputs()
-        ## CASE: load model from already built BN
+        if isinstance(inputs, str):
+            self.inputs = json.loads(inputs)
+        else:
+            self.inputs = inputs
+
         if self.inputs['data'] != None:
             print('model data supplied')
             self.__load_inputs()
-        ## CASE: build new model from data supplied via BNdata and netstructure
         else:
             print('no model data supplied')
             self.__load_inputs()
+
         if isinstance(self.inputs['output'], list):
-            self.inputs['output'] = self.inputs['output'][0]
-    
+            self.inputs['output'] = self.inputs['output'][0]           
         
 
     def __load_inputs(self):
@@ -37,6 +39,13 @@ class BayesianNetwork:
         'meta' method: this is when the model is used to predict the output of a real case
 
         """
+        if isinstance(self.inputs['data'], str):
+            data = bn.utilities.prepare_csv(self.inputs['data'])
+        elif isinstance(self.inputs['data'], dict):
+            data = pd.DataFrame(self.inputs['data'])
+        else:
+            raise ValueError('Invalid data format')
+
         # If model data is supplied, load the data
         data = bn.utilities.prepare_csv(self.inputs['data'])
 
@@ -110,6 +119,9 @@ class BayesianNetwork:
             raise ValueError('Invalid method for discretisation')
 
         self.struct = bn.utilities.df2struct(data, self.inputs['inputs'], self.inputs['output'])
+        print('inputs: ', self.inputs['inputs'])
+        print('output: ', self.inputs['output'])
+        print(self.struct)
 
     def train(self):
         """
@@ -133,6 +145,9 @@ class BayesianNetwork:
         validate the model depending on the method of validation chosen
 
         """
+        norm_distance_errors_list = []  # Create an empty list to store all norm_distance_errors arrays
+        prediction_accuracy_list = []  # Create an empty list to store all prediction_accuracy values
+     
         if self.inputs['method'] == 'uniform':
             # Get the posteriors for the testing subset
             # TODO: create a run_model function. Obs_posteriors should be in a different function
@@ -153,7 +168,7 @@ class BayesianNetwork:
             norm_distance_errors, prediction_accuracy = bn.evaluate_errors.distribution_distance_error(correct_bin_locations,
                                                                                                         predicted_posteriors,
                                                                                                         actual_values,
-                                                                                                        bin_ranges)
+                                                                                                        bin_ranges, self.inputs['error_type'])
                                                                                                                     
             self.errors = {'norm_distance_errors': norm_distance_errors,
                         'prediction_accuracy': prediction_accuracy}
@@ -176,18 +191,69 @@ class BayesianNetwork:
                 norm_distance_errors, prediction_accuracy = bn.evaluate_errors.distribution_distance_error(correct_bin_locations,
                                                                                                             predicted_posteriors,
                                                                                                             actual_values,
-                                                                                                            bin_ranges)
+                                                                                                            bin_ranges, self.inputs['error_type'])
 
                 self.folds[fold]['errors'] = {'norm_distance_errors': norm_distance_errors,
                                             'prediction_accuracy': prediction_accuracy}
+                
+                norm_distance_errors_list.append(norm_distance_errors)
+                prediction_accuracy_list.append(prediction_accuracy)
             
+                # print("norm_distance_errors: ", norm_distance_errors_list)
+                # print("prediction_accuracy: ", prediction_accuracy_list)
 
-            # self.errors = {'norm_distance_errors': np.mean([self.folds[fold]['errors']['norm_distance_errors'] for fold in self.folds]),
-            #             'prediction_accuracy': np.mean([self.folds[fold]['errors']['prediction_accuracy'] for fold in self.folds])}
+            self.errors = {
+                'norm_distance_errors': np.mean([error for fold in self.folds for error in self.folds[fold]['errors']['norm_distance_errors']]),
+                'prediction_accuracy': np.mean([self.folds[fold]['errors']['prediction_accuracy'] for fold in self.folds])
+            }
 
+            #bn.plotting.plot_errors(norm_distance_errors_list, self.inputs['kfoldnbins'], prediction_accuracy_list, self.errors['prediction_accuracy'])
+        
         else:
             raise ValueError('Invalid method for discretisation')
-
+        
+    # def sensitivity_analysis(self): #this is where we want to run the model with different bin sizes and see how the prediction accuracy changes
+    #     accuracies = []
+    #     start, end = self.inputs['nbins_sensitivity_range']
+    #     for nbins in range(start, end):
+    #         self.inputs['nbins'] = [{'inputs': nbins, 'output': nbins}]
+    #         self.train()
+    #         self.validate()
+    #         accuracies.append(self.errors['prediction_accuracy'])
+    #         print(accuracies)
+    #     return accuracies
+    
+    # def sensitivity_analysis(self):
+    #     results = {}
+    #     start, end = self.inputs['nbins_sensitivity_range']
+    #     for nbins in range(start, end):
+    #         self.inputs['nbins'] = [{'inputs': nbins, 'output': nbins}]
+    #         self.train()
+    #         self.validate()
+    #         bin_config = f'inputs: {nbins}, output: {nbins}'
+    #         # accuracies[bin_config] = self.errors['prediction_accuracy']
+    #         results[bin_config] = (nbins, nbins, self.errors['prediction_accuracy'])
+    #         # print(bin_config, results[bin_config])
+    #     with open('sa_results5k.pkl', 'wb') as f:
+    #         pickle.dump(results, f)
+    #     return results
+    
+    def sensitivity_analysis(self):
+        results = {}
+        start, end = self.inputs['nbins_sensitivity_range']
+        for nbins_input in range(start, end):
+            for nbins_output in range(start, end):
+                self.inputs['nbins'] = [{'inputs': nbins_input, 'output': nbins_output}]
+                self.train()
+                self.validate()
+                bin_config = f'inputs: {nbins_input}, output: {nbins_output}'
+                results[bin_config] = (nbins_input, nbins_output, self.errors['prediction_accuracy'])
+                # print(bin_config, results[bin_config])
+        with open('sa_results_st20_trimmed_V2_D2.pkl', 'wb') as f:
+            pickle.dump(results, f)
+        return results
+    
+    #bn.plotting.plot_sensitivity_analysis(results)
 
     def save(self, path): #this is where we want to save the join_tree
         """
@@ -272,7 +338,7 @@ class BayesianNetwork:
                 self.obs_posteriors = aux_obs
     
                 # plot the posteriors
-                bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], 5)
+                bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], 3)
             
 
             else: #this is when we want to run with soft evidence across multiple bins

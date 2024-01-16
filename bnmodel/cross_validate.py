@@ -69,7 +69,7 @@ def k_fold_cross_validation(structure, data, output, numFolds, histnbins, nbins=
         #calculate average prediction accuracy for all folds
         av_prediction_accuracy = sum(prediction_accuracy) / len(prediction_accuracy)
 
-        # ax = bn.evaluate_errors.plot_errors(norm_distance_errors, histnbins, numFolds, prediction_accuracy, plot=True)
+        ax = bn.evaluate_errors.plot_errors(norm_distance_errors, histnbins, numFolds, prediction_accuracy, plot=True)
         
         fold_counter += 1
 

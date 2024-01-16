@@ -5,12 +5,15 @@ from bnmodel_copy.bayesian_network import BayesianNetwork
 # discretisation method (equidistant, percentile...)
 # train/test percentage
 #%%
-inputs = {'data': 'st20_trimmed.csv', 
-          'inputs': ['fdene', 'fimp14', 'pseprmax', 'feffcd', 'aspect', 'boundu2', 'outlet_temp', 'beta', 'etanbi'],
+inputs = {'data': 'st20_trimmed_v2.csv', 
+          'inputs': ['aspect', 'outlet_temp', 'beta', 'etanbi'],
           'output': ['capcost'],
-          'nbins': [{'inputs':5, 'output':8}],
-          'nfolds': 3,
-          'method': 'meta',
+          'nbins': [{'inputs':3, 'output':3}],
+          'nbins_sensitivity_range': [3, 11],
+          'kfoldnbins': 25,
+          'nfolds': 10,    
+          'method': 'kfold',
+          'error_type': 'D2',
           'discretisation': [{'inputs':'uniform', 'output':'percentile'}],
           'evidence':[{'nod':'fimp14', 'bin_index': '5', 'val': 1},
                       {'nod':'pseprmax', 'bin_index': '3', 'val': 1},
