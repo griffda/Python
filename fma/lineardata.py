@@ -24,9 +24,10 @@ def make_data(n):
 
     ### f = ma rearranged to calculate acceleration given a force and a mass. 
     acc = sample_force / sample_masses 
+    acc_squared = acc**2    ###squaring the acceleration to make it easier to plot
 
     ###this collects the data into an array
-    sample_array = np.column_stack((sample_masses, sample_force, acc))
+    sample_array = np.column_stack((sample_masses, sample_force, acc, acc_squared))
 
     ###This plots the data 
     plt.scatter(sample_masses, acc.ravel())
@@ -46,11 +47,11 @@ def create_output_dataframe(sample_array):
      ###contains all of them.
      
      out_dat = pd.DataFrame(sample_array[:,:],
-                           columns = ['mass', 'force', 'acceleration'],
+                           columns = ['mass', 'force', 'acceleration', 'acceleration_squared'],
                            )
     
          ###Saving to new csv after data manipulation
-     out_dat.to_csv('outputv5.csv', index=False)
+     out_dat.to_csv('outputv6.csv', index=False)
      return out_dat
 
 ###FUNCTIONS 

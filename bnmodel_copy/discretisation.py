@@ -52,8 +52,8 @@ def binning_data(data, nbins = None, x_cols=None, y_cols=None):
     
     # Apply equidistant binning to the input variables
     for col in x.columns:
-        # x.loc[:, col], bin_edge_aux = pd.cut(x.loc[:, col], bins=int(input_nbins), labels=labels_input, retbins=True)
-        x.loc[:, col], bin_edge_aux = pd.qcut(x.loc[:, col], q=int(input_nbins), labels=labels_input, retbins=True)
+        x.loc[:, col], bin_edge_aux = pd.cut(x.loc[:, col], bins=int(input_nbins), labels=labels_input, retbins=True)
+        #x.loc[:, col], bin_edge_aux = pd.qcut(x.loc[:, col], q=int(input_nbins), labels=labels_input, retbins=True)
 
         bin_edges[col] = bin_edge_aux
         prior = x.loc[:, col].value_counts(normalize=True).sort_index()

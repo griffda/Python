@@ -26,8 +26,9 @@ class BayesianNetwork:
             print('no model data supplied')
             self.__load_inputs()
 
-        if isinstance(self.inputs['output'], list):
-            self.inputs['output'] = self.inputs['output'][0]           
+        # if isinstance(self.inputs['output'], list):
+        #     # self.inputs['output'] = self.inputs['output'][0]
+        #     pass           
         
 
     def __load_inputs(self):
@@ -40,14 +41,15 @@ class BayesianNetwork:
 
         """
         if isinstance(self.inputs['data'], str):
-            data = bn.utilities.prepare_csv(self.inputs['data'])
+                    data = bn.utilities.prepare_csv(self.inputs['data'], self.inputs['inputs'], self.inputs['output'])
+
         elif isinstance(self.inputs['data'], dict):
             data = pd.DataFrame(self.inputs['data'])
         else:
             raise ValueError('Invalid data format')
 
         # If model data is supplied, load the data
-        data = bn.utilities.prepare_csv(self.inputs['data'])
+        data = bn.utilities.prepare_csv(self.inputs['data'], self.inputs['inputs'], self.inputs['output'])
 
         if self.inputs['method'] == 'uniform': # No k-fold cross-validation
             x, y, bin_edges, prior_xytrn = bn.discretisation.binning_data(data,
@@ -112,16 +114,18 @@ class BayesianNetwork:
             self.bin_edges = bin_edges
             self.prior_xytrn = prior_xytrn
             self.data = data
+            
             #concatenate inputd and outputs to create a single dataframe
             self.train_binned = pd.concat([x, y], axis=1)
             self.train_binned = self.train_binned.astype(str)
+            # print(self.train_binned)
         else:
             raise ValueError('Invalid method for discretisation')
 
         self.struct = bn.utilities.df2struct(data, self.inputs['inputs'], self.inputs['output'])
-        print('inputs: ', self.inputs['inputs'])
-        print('output: ', self.inputs['output'])
-        print(self.struct)
+        # print('inputs: ', self.inputs['inputs'])
+        # print('output: ', self.inputs['output'])
+        # print(self.struct)
 
     def train(self):
         """
@@ -323,9 +327,9 @@ class BayesianNetwork:
 
             if self.inputs['evidence'] != None: #this is when we want to run with hard evidence
                 observations = self.inputs['evidence']
+                evidence_vars = []
                 # inference using the evidence supplied in the inputs
                 for observation in observations:
-                    print(observation)
                     node_name = observation['nod']
                     bin_index = observation['bin_index']
                     value = observation['val']
@@ -333,12 +337,13 @@ class BayesianNetwork:
                     join_tree.set_observation(ev4jointree)
                     join_tree.unobserve_all
                     self.join_tree = join_tree
+                    evidence_vars.append(node_name)
                 # update the join tree with the evidence
                 aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
                 self.obs_posteriors = aux_obs
     
                 # plot the posteriors
-                bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], 3)
+                bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], evidence_vars, 3)
             
 
             else: #this is when we want to run with soft evidence across multiple bins
@@ -373,3 +378,124 @@ class BayesianNetwork:
                 bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.inputs['inputs'], self.inputs['output'])
         else:
             raise ValueError('Invalid method')
+        
+    def run_model2(self):
+        """
+        data_path: path to csv file - it should not need this. 
+        also trying new plotting routine
+
+        what to get out: 
+        1. posteriors based on evidence
+
+        what needs to go in:
+        1. should only be used in meta method
+        2. join_tree from the training - load from json file
+        3. evidence (inputs) - hard, soft or hybrid
+            - hard: evidence for a single bin
+            - soft: evidence for multiple bins: 
+                inputs = {
+                    'evidence': {
+                        'node1': [0.1, 0.2, 0.7],  # Evidence for node1
+                        'node2': [0.3, 0.3, 0.4],  # Evidence for node2
+                        # Add more nodes and evidence values as needed
+                    },
+                        # Other inputs...
+                    }
+        4. output (to get the posteriors) 
+
+        """
+                # ask which method is used from inputs
+        if self.inputs['method'] == 'uniform':
+            pass
+
+        elif self.inputs['method'] == 'kfold':
+            pass
+
+        elif self.inputs['method'] == 'meta':
+
+            # load the join tree from json file
+            with open(self.inputs['load_join_tree_path'], 'r') as f:
+                j = f.read()
+                d = json.loads(j)
+                jt = JoinTree.from_dict(d)
+                join_tree = InferenceController.apply_from_serde(jt)
+                
+            # load the bin edges from json file
+            with open(self.inputs['load_bin_edges_path'], 'r') as json_file:
+                bin_edges = json.load(json_file)
+
+            evidence_type = self.inputs['evidence_type']
+
+            if evidence_type == 'hard':
+                # Hard evidence
+                observations = self.inputs['evidence']
+                evidence_vars = []
+                for observation in observations:
+                    node_name = observation['nod']
+                    bin_index = observation['bin_index']
+                    value = observation['val']
+                    ev4jointree = bn.join_tree_population.evidence(node_name, int(bin_index), value, join_tree)
+                    join_tree.set_observation(ev4jointree)
+                    join_tree.unobserve_all
+                    self.join_tree = join_tree
+                    evidence_vars.append(node_name)
+                # Generate posteriors and plot
+                aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
+                self.obs_posteriors = aux_obs
+                print(self.inputs['inputs'], self.inputs['output'])
+                print(evidence_vars)
+                bn.plotting.plot_meta2(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], evidence_vars, 3)
+
+            elif evidence_type == 'soft': # this uses a different format for the evidence 
+                # Soft evidence
+                evidence = self.inputs['evidence_soft']
+                for node_name, values in evidence.items():
+                    node = join_tree.get_bbn_node_by_name(node_name)
+                    if node:
+                        for bin_index, value in enumerate(values, start=1):
+                            evidence_builder = EvidenceBuilder().with_node(node).with_type(EvidenceType.OBSERVATION)
+                            evidence_builder = evidence_builder.with_evidence(str(bin_index), value)
+                            evidence = evidence_builder.build()
+                            print(bin_index, value, node_name, values)
+                            join_tree.set_observation2(evidence)
+                            join_tree.unobserve_all
+                            self.join_tree = join_tree 
+                    else:
+                        print(f"Bin index '{bin_index}' not found in the potentials for node '{node_name}'.")
+                # Generate posteriors and plot
+                aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
+                self.obs_posteriors = aux_obs
+            
+                bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], 3)
+
+            elif evidence_type == 'soft2': # trying to use same dict format as hard evidence 
+                # Soft evidence
+                observations = self.inputs['evidence']
+                for observation in observations:
+                    node_name = observation['nod']
+                    bin_index = observation['bin_index']
+                    value = observation['val']
+                    ev4jointree = bn.join_tree_population.evidence(node_name, int(bin_index), value, join_tree)
+                    print(bin_index, value, node_name)
+                    join_tree.set_observation2(ev4jointree)
+                    print(ev4jointree)
+                    #join_tree.unobserve_all  # Unobserve all after setting all the evidence
+                    self.join_tree = join_tree
+                for node, posteriors_raw in join_tree.get_posteriors().items():
+                    posteriors = {int(k): v for k, v in posteriors_raw.items()}
+                    print(node, posteriors)
+                aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
+                print(aux_obs)
+                self.obs_posteriors = aux_obs
+                bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], 3)
+            # else:
+            #     raise ValueError('Invalid evidence type')
+                # Generate posteriors and plot
+            
+
+            # # Generate posteriors and plot
+            # aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
+            # self.obs_posteriors = aux_obs
+            
+            # # # plot the posteriors
+            # bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], 3)

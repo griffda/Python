@@ -258,7 +258,7 @@ def plot_training(posteriors, edges, priors, inputs, outputs, obs2plot: int, axp
     return ax      
 
 
-def plot_meta(posteriors, edges, priors, inputs, outputs, axperrow: int = 3):
+def plot_meta(posteriors, edges, priors, inputs, outputs, evidence_vars, axperrow: int = 3):
     """
     Plot the results of the meta model inference in a figure showing posteriors from observations
 
@@ -281,52 +281,111 @@ def plot_meta(posteriors, edges, priors, inputs, outputs, axperrow: int = 3):
         binwidth[var] = edges[var][1:]-edges[var][:-1]
         bin_centers[var] = 0.5*(edges[var][1:] + edges[var][:-1])
 
-    # Get the number of axis
     nax = len(posteriors)
     nrow = int(np.ceil(nax/axperrow))
     ncol = axperrow
-    
+
     fig, ax = plt.subplots(nrow, ncol, squeeze=False)
-    ax.reshape((nrow, axperrow))
+    ax = ax.flatten()  # Flatten the array for easier indexing
     colnames = list(edges.keys())
 
-    i = 0
-    j = 0
-    for var in colnames:
-
-        ax[i, j].bar(bin_centers[var], priors[var], width=binwidth[var],
+    for idx, var in enumerate(colnames):
+        ax[idx].bar(bin_centers[var], priors[var], width=binwidth[var],
                      color='grey', alpha=0.7, linewidth=0.2, edgecolor='black')
 
-        # Plot the posterior dist
-        # need to plot the target posteriors using equidistant bins to make the plot look nice
-        if var in inputs:
+        if var in evidence_vars:
             colour = 'green'
-        elif var in outputs:
+        else:
             colour = 'red'
-        ax[i, j].bar(bin_centers[var], posteriors[var], width=binwidth[var],
+        ax[idx].bar(bin_centers[var], posteriors[var], width=binwidth[var],
                      color=colour, alpha=0.5, linewidth=0.2, edgecolor='black')
 
-        # Cosmetics
-        ax[i, j].grid(True, linestyle='--', alpha=0.5)
-        ax[i, j].set_facecolor('whitesmoke')
-        ax[i, j].set_title(var, fontweight="bold", fontsize=10)
-        ax[i, j].set_ylim([0, 1])
-        ax[i, j].xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+        ax[idx].grid(True, linestyle='--', alpha=0.5)
+        ax[idx].set_facecolor('whitesmoke')
+        ax[idx].set_title(var, fontweight="bold", fontsize=10)
+        ax[idx].set_ylim([0, 1])
+        #ax[idx].xaxis.set_major_formatter(formatter)
+        ax[idx].set_xticks(edges[var])
+        #ax[idx].set_xticklabels(edges[var], rotation='vertical')
 
-        # Set x-axis label for the bottom row
-        if i == nrow - 1:
-            ax[i, j].set_xlabel('Ranges')
+        if idx // axperrow == nrow - 1:
+            ax[idx].set_xlabel('Ranges')
 
-        # Set y-axis label for the leftmost column
-        if j == 0:
-            ax[i, j].set_ylabel('Probability')
+        if idx % axperrow == 0:
+            ax[idx].set_ylabel('Probability')
 
-        j += 1
-        if j == ncol:
-            j = 0
-            i += 1
+    # Remove unused subplots
+    for idx in range(len(colnames), nrow * ncol):
+        fig.delaxes(ax[idx])
 
-    title = 'Prior and Posterior Distributions'  #+str(obs2plot)
+    title = 'Prior and Posterior Distributions'
+    fig.suptitle(title, fontsize=10)
+    plt.show(block=False)
+    plt.tight_layout()
+
+def plot_meta2(posteriors, edges, priors, inputs, outputs, evidence_vars, axperrow: int = 3):
+    """
+    Plot the results of the meta model inference in a figure showing posteriors from observations
+
+    Parameters
+    ----------
+    posteriors : dict Posteriors distributions
+    edges : array Edges of the bins
+    inputs : list Input variables
+    outputs : list Output variables
+
+    Returns
+    -------
+    ax : figure axis
+    """
+    # Get the bins parameters for all variables
+    binwidth = {}
+    bin_centers = {}
+    for var in edges:
+        edges[var] = np.array(edges[var])
+        binwidth[var] = edges[var][1:]-edges[var][:-1]
+        bin_centers[var] = 0.5*(edges[var][1:] + edges[var][:-1])
+
+    nax = len(posteriors)
+    nrow = int(np.ceil(nax/axperrow))
+    ncol = axperrow
+
+    fig, ax = plt.subplots(nrow, ncol, squeeze=False)
+    ax = ax.flatten()  # Flatten the array for easier indexing
+    colnames = list(edges.keys())
+
+    for idx, var in enumerate(colnames):
+        # Use range(len(...)) as x-values to make bins appear equidistant
+        ax[idx].bar(range(len(bin_centers[var])), priors[var], width=1,
+                    color='grey', alpha=0.7, linewidth=0.2, edgecolor='black')
+
+        if var in evidence_vars:
+            colour = 'green'
+        else:
+            colour = 'red'
+        ax[idx].bar(range(len(bin_centers[var])), posteriors[var], width=1,
+                    color=colour, alpha=0.5, linewidth=0.2, edgecolor='black')
+
+        ax[idx].grid(True, linestyle='--', alpha=0.5)
+        ax[idx].set_facecolor('whitesmoke')
+        ax[idx].set_title(var, fontweight="bold", fontsize=10)
+        ax[idx].set_ylim([0, 1])
+        #ax[idx].xaxis.set_major_formatter(formatter)
+        ax[idx].set_xticks(range(len(edges[var])))
+        # ax[idx].set_xticklabels(edges[var])  # Keep labels horizontal
+        ax[idx].set_xticklabels(['{:.2f}'.format(edge) for edge in edges[var]])
+
+        if idx // axperrow == nrow - 1:
+            ax[idx].set_xlabel('Ranges')
+
+        if idx % axperrow == 0:
+            ax[idx].set_ylabel('Probability')
+
+    # Remove unused subplots
+    for idx in range(len(colnames), nrow * ncol):
+        fig.delaxes(ax[idx])
+
+    title = 'Prior and Posterior Distributions'
     fig.suptitle(title, fontsize=10)
     plt.show(block=False)
     plt.tight_layout()
