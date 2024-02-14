@@ -11,6 +11,7 @@ from sklearn.model_selection import KFold
 import numpy as np
 import os
 import json
+import ast
 
 class BayesianNetwork:
     def __init__(self, inputs):
@@ -26,10 +27,10 @@ class BayesianNetwork:
             print('no model data supplied')
             self.__load_inputs()
 
-        # if isinstance(self.inputs['output'], list):
-        #     # self.inputs['output'] = self.inputs['output'][0]
-        #     pass           
-        
+        if isinstance(self.inputs['output'], list):
+            self.inputs['output'] = self.inputs['output'][0]
+            pass
+
 
     def __load_inputs(self):
         """
@@ -41,7 +42,7 @@ class BayesianNetwork:
 
         """
         if isinstance(self.inputs['data'], str):
-                    data = bn.utilities.prepare_csv(self.inputs['data'], self.inputs['inputs'], self.inputs['output'])
+            data = bn.utilities.prepare_csv(self.inputs['data'], self.inputs['inputs'], self.inputs['output'])
 
         elif isinstance(self.inputs['data'], dict):
             data = pd.DataFrame(self.inputs['data'])
@@ -59,11 +60,11 @@ class BayesianNetwork:
             self.bin_edges = bin_edges
             self.prior_xytrn = prior_xytrn
             self.data = data
-    
+
 
             # Split the data into training and testing sets
             x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=self.inputs['train_test_split'])
-        
+
             # Combine the binned data into a single DataFrame for each set
             # Pybbn only reads data types as strings, so this line converts the data in the csv from int64 to string
             train_binned = pd.concat([x_train, y_train], axis=1)
@@ -79,12 +80,13 @@ class BayesianNetwork:
                                                                           self.inputs['output'])
             self.bin_edges = bin_edges
             self.prior_xytrn = prior_xytrn
-            self.data = data 
-            
+            self.data = data
+
+
             # k-fold cross-validation
-            kf = KFold(n_splits=self.inputs['nfolds'], 
-                    shuffle=True, 
-                    random_state=42) 
+            kf = KFold(n_splits=self.inputs['nfolds'],
+                    shuffle=True,
+                    random_state=42)
             kf.get_n_splits(x)
 
             self.folds = {}
@@ -104,7 +106,9 @@ class BayesianNetwork:
                 self.folds[fold_name] = {'train_binned': train_binned,
                                          'test_binned': test_binned}
                 fold_counter += 1
-            
+            self.train_binned = train_binned
+
+
         elif self.inputs['method'] == 'meta': # This is when the model is used to predict the output of a real case
             # discretise the data
             x, y, bin_edges, prior_xytrn = bn.discretisation.binning_data(data,
@@ -114,7 +118,7 @@ class BayesianNetwork:
             self.bin_edges = bin_edges
             self.prior_xytrn = prior_xytrn
             self.data = data
-            
+
             #concatenate inputd and outputs to create a single dataframe
             self.train_binned = pd.concat([x, y], axis=1)
             self.train_binned = self.train_binned.astype(str)
@@ -138,12 +142,14 @@ class BayesianNetwork:
         elif self.inputs['method'] == 'kfold':
             for fold in self.folds:
                 self.folds[fold]['join_tree'], self.bbn = bn.join_tree_population.prob_dists(self.struct, self.folds[fold]['train_binned'])
+                print(f'Join tree for fold {fold} created')
+            self.join_tree, self.bbn = bn.join_tree_population.prob_dists(self.struct, self.train_binned)
         elif self.inputs['method'] == 'meta': #need to add a section for meta where we use all the data to train the model and no validation is done
             #populate the join tree
             self.join_tree, self.bbn = bn.join_tree_population.prob_dists(self.struct, self.train_binned)
         else:
             raise ValueError('Invalid method for discretisation')
-        
+
     def validate(self):
         """
         validate the model depending on the method of validation chosen
@@ -151,17 +157,17 @@ class BayesianNetwork:
         """
         norm_distance_errors_list = []  # Create an empty list to store all norm_distance_errors arrays
         prediction_accuracy_list = []  # Create an empty list to store all prediction_accuracy values
-     
+
         if self.inputs['method'] == 'uniform':
             # Get the posteriors for the testing subset
             # TODO: create a run_model function. Obs_posteriors should be in a different function
-            obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(self.test_binned, 
-                                                                        self.inputs['output'], 
+            obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(self.test_binned,
+                                                                        self.inputs['output'],
                                                                         self.data)
             all_ev_list = bn.generate_posteriors.gen_ev_list(self.test_binned,
                                                             obs_dicts,
                                                             self.inputs['output'])
-            obs_posteriors, predicted_posteriors = bn.generate_posteriors.get_all_posteriors(all_ev_list,
+            obs_posteriors, predicted_posteriors, target_predictions = bn.generate_posteriors.get_all_posteriors(all_ev_list,
                                                                                             self.join_tree,
                                                                                             self.inputs['output'])
             # self.obs_posteriors = obs_posteriors
@@ -173,25 +179,32 @@ class BayesianNetwork:
                                                                                                         predicted_posteriors,
                                                                                                         actual_values,
                                                                                                         bin_ranges, self.inputs['error_type'])
-                                                                                                                    
+
             self.errors = {'norm_distance_errors': norm_distance_errors,
                         'prediction_accuracy': prediction_accuracy}
-        
+
         elif self.inputs['method'] == 'kfold':
             for fold in self.folds:
-                obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(self.folds[fold]['test_binned'], 
-                                                                        self.inputs['output'], 
+                obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(self.folds[fold]['test_binned'],
+                                                                        self.inputs['output'],
                                                                         self.data)
+                # print('obs_dicts: ', obs_dicts)
                 all_ev_list = bn.generate_posteriors.gen_ev_list(self.folds[fold]['test_binned'],
                                                                 obs_dicts,
                                                                 self.inputs['output'])
-                obs_posteriors, predicted_posteriors = bn.generate_posteriors.get_all_posteriors(all_ev_list,
+                self.all_ev_list = all_ev_list
+                # print('all_ev_list: ', all_ev_list)
+                obs_posteriors, predicted_posteriors, target_predictions = bn.generate_posteriors.get_all_posteriors(all_ev_list,
                                                                                                 self.folds[fold]['join_tree'],
                                                                                                 self.inputs['output'])
-                
+
                 # Error evaluation
                 correct_bin_locations, actual_values = bn.evaluate_errors.get_correct_values(obs_dicts, self.inputs['output'])
+
+
                 bin_ranges = bn.evaluate_errors.extract_bin_ranges(self.inputs['output'], self.bin_edges)
+
+
                 norm_distance_errors, prediction_accuracy = bn.evaluate_errors.distribution_distance_error(correct_bin_locations,
                                                                                                             predicted_posteriors,
                                                                                                             actual_values,
@@ -199,10 +212,10 @@ class BayesianNetwork:
 
                 self.folds[fold]['errors'] = {'norm_distance_errors': norm_distance_errors,
                                             'prediction_accuracy': prediction_accuracy}
-                
+
                 norm_distance_errors_list.append(norm_distance_errors)
                 prediction_accuracy_list.append(prediction_accuracy)
-            
+
                 # print("norm_distance_errors: ", norm_distance_errors_list)
                 # print("prediction_accuracy: ", prediction_accuracy_list)
 
@@ -211,11 +224,11 @@ class BayesianNetwork:
                 'prediction_accuracy': np.mean([self.folds[fold]['errors']['prediction_accuracy'] for fold in self.folds])
             }
 
-            #bn.plotting.plot_errors(norm_distance_errors_list, self.inputs['kfoldnbins'], prediction_accuracy_list, self.errors['prediction_accuracy'])
-        
+            bn.plotting.plot_errors(norm_distance_errors_list, self.inputs['kfoldnbins'], prediction_accuracy_list, self.errors['prediction_accuracy'])
+
         else:
             raise ValueError('Invalid method for discretisation')
-        
+
     # def sensitivity_analysis(self): #this is where we want to run the model with different bin sizes and see how the prediction accuracy changes
     #     accuracies = []
     #     start, end = self.inputs['nbins_sensitivity_range']
@@ -226,7 +239,7 @@ class BayesianNetwork:
     #         accuracies.append(self.errors['prediction_accuracy'])
     #         print(accuracies)
     #     return accuracies
-    
+
     # def sensitivity_analysis(self):
     #     results = {}
     #     start, end = self.inputs['nbins_sensitivity_range']
@@ -241,7 +254,7 @@ class BayesianNetwork:
     #     with open('sa_results5k.pkl', 'wb') as f:
     #         pickle.dump(results, f)
     #     return results
-    
+
     def sensitivity_analysis(self):
         results = {}
         start, end = self.inputs['nbins_sensitivity_range']
@@ -253,26 +266,26 @@ class BayesianNetwork:
                 bin_config = f'inputs: {nbins_input}, output: {nbins_output}'
                 results[bin_config] = (nbins_input, nbins_output, self.errors['prediction_accuracy'])
                 # print(bin_config, results[bin_config])
-        with open('sa_results_st20_trimmed_V2_D2.pkl', 'wb') as f:
+        with open('sa_results_te_data_v3_D1.pkl', 'wb') as f:
             pickle.dump(results, f)
         return results
-    
+
     #bn.plotting.plot_sensitivity_analysis(results)
 
     def save(self, path): #this is where we want to save the join_tree
         """
         Saves the join_tree to a json file
-        Saves the bin_edges to a json file 
+        Saves the bin_edges to a json file
         Saves the model to a pickle file or json file - need to decide which one
 
         """
         # Convert the JoinTree object to a serializable format
         with open(self.inputs['save_join_tree_path'], 'w') as f:
-            d = JoinTree.to_dict(self.join_tree, self.bbn) #self.bbn is the bayesian network object 
+            d = JoinTree.to_dict(self.join_tree, self.bbn) #self.bbn is the bayesian network object
             j = json.dumps(d, sort_keys=True, indent=2)
             f.write(j)
 
-        
+
         # Convert NumPy arrays to lists in the dictionary
         bin_edges_serializable = {key: self.bin_edges[key].tolist() for key in self.bin_edges}
 
@@ -285,11 +298,15 @@ class BayesianNetwork:
         # with open(path, 'wb') as outp:
         #     pickle.dump(self, outp, pickle.HIGHEST_PROTOCOL)
 
-    def run_model(self):
-        """
-        data_path: path to csv file - it should not need this. 
+        # Save all_ev_list to a pickle file
+        with open('all_ev_list.pkl', 'wb') as f:
+            pickle.dump(self.all_ev_list, f)
 
-        what to get out: 
+    def run_model(self): #old routine
+        """
+        data_path: path to csv file - it should not need this.
+
+        what to get out:
         1. posteriors based on evidence
 
         what needs to go in:
@@ -297,7 +314,7 @@ class BayesianNetwork:
         2. join_tree from the training
         3. evidence (inputs)
         4. output (to get the posteriors)
-        
+
 
         TODO: add any inputs and outputs to the model
         TODO: ranges for inputs (no hard evidence)
@@ -313,14 +330,14 @@ class BayesianNetwork:
         elif self.inputs['method'] == 'meta':
             # load the evidence
             # observations = self.inputs['evidence']
-            
+
             # load the join tree from json file
             with open(self.inputs['load_join_tree_path'], 'r') as f:
                 j = f.read()
                 d = json.loads(j)
                 jt = JoinTree.from_dict(d)
                 join_tree = InferenceController.apply_from_serde(jt)
-                
+
             # load the bin edges from json file
             with open(self.inputs['load_bin_edges_path'], 'r') as json_file:
                 bin_edges = json.load(json_file)
@@ -341,10 +358,12 @@ class BayesianNetwork:
                 # update the join tree with the evidence
                 aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
                 self.obs_posteriors = aux_obs
-    
+
+
                 # plot the posteriors
                 bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], evidence_vars, 3)
-            
+
+
 
             else: #this is when we want to run with soft evidence across multiple bins
                 # Define evidence for multiple bins on the same node
@@ -368,31 +387,31 @@ class BayesianNetwork:
                             self.join_tree = join_tree
                     else:
                         print(f"Node '{node_name}' not found in the join tree.")
-                
+
                 aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
                 self.obs_posteriors = aux_obs
 
                 join_tree.update_evidences([evidence])
 
                 # plot the posteriors
-                bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.inputs['inputs'], self.inputs['output'])
+                bn.plotting.plot_meta2(self.obs_posteriors, bin_edges, self.inputs['inputs'], self.inputs['output'])
         else:
             raise ValueError('Invalid method')
-        
-    def run_model2(self):
+
+    def run_model2(self):#latest routine
         """
-        data_path: path to csv file - it should not need this. 
+        data_path: path to csv file - it should not need this.
         also trying new plotting routine
 
-        what to get out: 
+        what to get out:
         1. posteriors based on evidence
 
         what needs to go in:
         1. should only be used in meta method
         2. join_tree from the training - load from json file
-        3. evidence (inputs) - hard, soft or hybrid
+        3. evidence (inputs) - hard, soft, optimal_config or hybrid
             - hard: evidence for a single bin
-            - soft: evidence for multiple bins: 
+            - soft: evidence for multiple bins:
                 inputs = {
                     'evidence': {
                         'node1': [0.1, 0.2, 0.7],  # Evidence for node1
@@ -401,7 +420,8 @@ class BayesianNetwork:
                     },
                         # Other inputs...
                     }
-        4. output (to get the posteriors) 
+            - optimal_config: evidence for the highest probability prediction for the lowest bin possible
+        4. output (to get the posteriors)
 
         """
                 # ask which method is used from inputs
@@ -419,14 +439,88 @@ class BayesianNetwork:
                 d = json.loads(j)
                 jt = JoinTree.from_dict(d)
                 join_tree = InferenceController.apply_from_serde(jt)
-                
+
             # load the bin edges from json file
             with open(self.inputs['load_bin_edges_path'], 'r') as json_file:
                 bin_edges = json.load(json_file)
 
-            evidence_type = self.inputs['evidence_type']
+            # load the all_ev_list from pickle file
+            with open('all_ev_list.pkl', 'rb') as f:
+                all_ev_list = pickle.load(f)
+                self.all_ev_list = all_ev_list
 
-            if evidence_type == 'hard':
+            evidence_type = self.inputs['evidence_type']
+            inference_type = self.inputs['inference_type']
+            optimal_config_type = self.inputs['optimal_config_type']
+            optimal_config_target = self.inputs['optimal_config_target(s)']
+
+            if evidence_type == 'optimal_config':
+                print('Optimal config type chosen: ' + evidence_type)
+
+                if inference_type == 'forward':
+                    print('Inference type chosen: ' + inference_type)
+
+                    obs_posteriors, predicted_posteriors, target_predictions = bn.generate_posteriors.get_all_posteriors(self.all_ev_list, join_tree, self.inputs['output'])
+
+                    if optimal_config_type == 'min_val':
+                        print('Optimal config type chosen: ' + optimal_config_type)
+                        min_bin_index = min(bin_index for _, bin_index in target_predictions.values())
+                        best_evidence = bn.generate_posteriors.find_best_evidence_for_bin(target_predictions, min_bin_index)
+
+                        print(f'The best evidence configurations are {best_evidence} with the highest probability prediction for bin {min_bin_index}')
+
+                    elif optimal_config_type == 'max_val':
+                        print('Optimal config type chosen: ' + optimal_config_type)
+                        max_bin_index = max(bin_index for _, bin_index in target_predictions.values())
+                        best_evidence = bn.generate_posteriors.find_best_evidence_for_bin(target_predictions, max_bin_index)
+                        # print(best_evidence)
+                        print(f'The best evidence configurations are {best_evidence} with the highest probability prediction for bin {max_bin_index}')
+                if inference_type == 'reverse':
+                    print('Inference type chosen: ' + inference_type)
+
+                    obs_posteriors, predicted_posteriors, target_predictions = bn.generate_posteriors.get_all_posteriors(self.all_ev_list, join_tree, self.inputs['output'])
+
+                    # Reverse inference
+                    # Get the best evidence configuration for the lowest bin
+                    if optimal_config_type == 'min_val':
+                        print('Optimal config type chosen: ' + optimal_config_type)
+                        min_bin_index = min(bin_index for _, bin_index in target_predictions.values())
+                        best_evidence = bn.generate_posteriors.find_best_evidence_for_bin(target_predictions, min_bin_index)
+
+                        print(f'The best evidence configurations are {best_evidence} with the highest probability prediction for bin {min_bin_index}')
+                    elif optimal_config_type == 'max_val':
+                        print('Optimal config type chosen: ' + optimal_config_type)
+                        max_bin_index = max(bin_index for _, bin_index in target_predictions.values())
+                        best_evidence = bn.generate_posteriors.find_best_evidence_for_bin(target_predictions, max_bin_index)
+                        # print(best_evidence)
+                        print(f'The best evidence configurations are {best_evidence} with the highest probability prediction for bin {max_bin_index}')
+
+                    # Parse the best evidence configuration back into a dictionary
+                    best_evidence = ast.literal_eval(best_evidence[0])
+                # print(best_evidence)
+                observations = best_evidence
+                evidence_vars = []
+                join_tree.unobserve_all()
+                for observation in observations:
+                    node_name = observation['nod']
+
+                    bin_index = observation['bin_index']
+
+                    value = observation['val']
+                    print(node_name, bin_index, value)
+                    ev4jointree = bn.join_tree_population.evidence(node_name, int(bin_index), value, join_tree)
+                    join_tree.set_observation(ev4jointree)
+
+                    self.join_tree = join_tree
+                    evidence_vars.append(node_name)
+
+                    # Generate posteriors and plot
+                aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(self.join_tree, self.inputs['output'])
+                self.obs_posteriors = aux_obs
+                print(self.obs_posteriors)
+                bn.plotting.plot_meta2(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], evidence_vars, 3)
+
+            elif evidence_type[1] == 'hard':
                 # Hard evidence
                 observations = self.inputs['evidence']
                 evidence_vars = []
@@ -442,11 +536,11 @@ class BayesianNetwork:
                 # Generate posteriors and plot
                 aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
                 self.obs_posteriors = aux_obs
-                print(self.inputs['inputs'], self.inputs['output'])
-                print(evidence_vars)
+                # print(self.inputs['inputs'], self.inputs['output'])
+                # print(evidence_vars)
                 bn.plotting.plot_meta2(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], evidence_vars, 3)
 
-            elif evidence_type == 'soft': # this uses a different format for the evidence 
+            elif evidence_type[2] == 'soft': # this uses a different format for the evidence
                 # Soft evidence
                 evidence = self.inputs['evidence_soft']
                 for node_name, values in evidence.items():
@@ -459,16 +553,16 @@ class BayesianNetwork:
                             print(bin_index, value, node_name, values)
                             join_tree.set_observation2(evidence)
                             join_tree.unobserve_all
-                            self.join_tree = join_tree 
+                            self.join_tree = join_tree
                     else:
                         print(f"Bin index '{bin_index}' not found in the potentials for node '{node_name}'.")
                 # Generate posteriors and plot
                 aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
                 self.obs_posteriors = aux_obs
-            
+
                 bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], 3)
 
-            elif evidence_type == 'soft2': # trying to use same dict format as hard evidence 
+            elif evidence_type == 'soft2': # trying to use same dict format as hard evidence
                 # Soft evidence
                 observations = self.inputs['evidence']
                 for observation in observations:
@@ -488,14 +582,11 @@ class BayesianNetwork:
                 print(aux_obs)
                 self.obs_posteriors = aux_obs
                 bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], 3)
-            # else:
-            #     raise ValueError('Invalid evidence type')
-                # Generate posteriors and plot
-            
-
+            else:
+                raise ValueError('Invalid evidence type')
             # # Generate posteriors and plot
             # aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
             # self.obs_posteriors = aux_obs
-            
+
             # # # plot the posteriors
             # bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], 3)

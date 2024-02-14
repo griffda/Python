@@ -51,8 +51,8 @@ def plot_errors(norm_distance_errors, histnbins, prediction_accuracy, av_predict
 
 
 
-def plot_sensitivity_analysis(results):#3D scatter plot of sensitivity analysis
-    with open('sa_results.pkl', 'rb') as f:
+def plot_sensitivity_analysis_3D_scatter(path):#3D scatter plot of sensitivity analysis
+    with open(path, 'rb') as f:
         results = pickle.load(f)
     bin_configs = list(results.keys())
     nbins_inputs = [results[config][0] for config in bin_configs]
@@ -69,7 +69,7 @@ def plot_sensitivity_analysis(results):#3D scatter plot of sensitivity analysis
     
     plt.show()
 
-def plot_sensitivity_analysis(results):#2D line plot of sensitivity analysis, 2 subplots, change to scatter plot 
+def plot_sensitivity_analysis_2D_line(results):#2D line plot of sensitivity analysis, 2 subplots, change to scatter plot 
     bin_configs = list(results.keys())
     nbins_inputs = [results[config][0] for config in bin_configs]
     nbins_outputs = [results[config][1] for config in bin_configs]
@@ -90,8 +90,8 @@ def plot_sensitivity_analysis(results):#2D line plot of sensitivity analysis, 2 
     plt.tight_layout()
     plt.show()
 
-def plot_sensitivity_analysis(results):#3D surface plot of sensitivity analysis
-    with open('sa_results5k.pkl', 'rb') as f:
+def plot_sensitivity_analysis_3D_surface(path):#3D surface plot of sensitivity analysis
+    with open('sa_results_te_data_v3_D1.pkl', 'rb') as f:
         results = pickle.load(f)
     # Convert dictionary to DataFrame
     data = pd.DataFrame(results.values(), columns=['inputs', 'outputs', 'accuracy'])
@@ -129,7 +129,7 @@ def plot_sensitivity_analysis(results):#3D surface plot of sensitivity analysis
     # Show the plot
     plt.show()
 
-def plot_sensitivity_analysis(results):#2D contour plot of sensitivity analysis
+def plot_sensitivity_analysis_2d_contour(results):#2D contour plot of sensitivity analysis
     # Convert dictionary to DataFrame
     data = pd.DataFrame(results.values(), columns=['inputs', 'outputs', 'accuracy'])
 
@@ -160,7 +160,7 @@ def plot_sensitivity_analysis(results):#2D contour plot of sensitivity analysis
     plt.show()
 
 
-def plot_sensitivity_analysis(results):#2D heatmap plot of sensitivity analysis
+def plot_sensitivity_analysis_2D_heatmap(results):#2D heatmap plot of sensitivity analysis
     # Convert dictionary to DataFrame
     data = pd.DataFrame(results.values(), columns=['inputs', 'outputs', 'accuracy'])
 

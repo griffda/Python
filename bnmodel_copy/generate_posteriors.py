@@ -100,7 +100,11 @@ def get_posteriors(join_tree, output):
     #     output = output[0]  # Convert the list to a single string if it is a list
     for node, posteriors_raw in join_tree.get_posteriors().items():
         obs_posteriors[node] = [posteriors_raw[val] for val in posteriors_raw]
+        # print(node)
+        # print(output)    
         if node == output:  # check if the observation corresponds to the specified target variable
+            # print(node)
+            # print(output)
             predictedTargetPosteriors = [posteriors_raw[val] for val in posteriors_raw]
 
     return obs_posteriors, predictedTargetPosteriors
@@ -124,6 +128,7 @@ def get_all_posteriors(all_ev_list, join_tree, output):
     """
     obs_posteriors = {}
     predicted_posteriors = []
+    target_predictions = {}
 
     # if isinstance(output, list):
     #     output = output[0]  # Convert the list to a single string if it is a list
@@ -137,6 +142,8 @@ def get_all_posteriors(all_ev_list, join_tree, output):
             join_tree.set_observation(ev4jointree)
         # Get the posteriors for this observation
         aux_obs, aux_prd = get_posteriors(join_tree, output)
+        # print("aux_obs:", aux_obs)
+        # print("aux_prd:", aux_prd)
 
         # Store the posteriors for this case
         for node_id, posterior in aux_obs.items():
@@ -144,11 +151,48 @@ def get_all_posteriors(all_ev_list, join_tree, output):
                 obs_posteriors[node_id] = []
             obs_posteriors[node_id].append(posterior)
         predicted_posteriors.append(aux_prd)
+        
+        # Extract highest probability and corresponding bin index and store them
+        target_probabilities = aux_prd  # aux_prd is the capcost prediction probabilities
+        highest_probability = max(target_probabilities)
+        corresponding_bin_index = target_probabilities.index(highest_probability)
+        target_predictions[str(observation)] = (highest_probability, corresponding_bin_index)
     
     # Ensure that the join tree is unmodified
     join_tree.unobserve_all()
 
-    return obs_posteriors, predicted_posteriors
+    # # if optimal_config == True:    # Find the evidence configuration with the highest probability for the lowest bin possible
+    # min_bin_index = min(bin_index for _, bin_index in target_predictions.values())
+    # best_evidence = find_best_evidence_for_bin(target_predictions, min_bin_index)
+
+    # print(f'The best evidence configurations are {best_evidence} with the highest probability prediction for bin {min_bin_index}')
+
+    return obs_posteriors, predicted_posteriors, target_predictions
+
+def find_best_evidence_for_bin(target_predictions, bin_index):
+    """
+    Find the evidence configuration with the highest probability for the specified bin.
+
+    Parameters
+    ----------
+    capcost_predictions : dict
+        Dictionary where the keys are the evidence configurations and the values are tuples containing the highest probability and the corresponding bin index.
+    bin_index : int
+        The bin index to find the best evidence configuration for.
+
+    Returns
+    -------
+    best_evidence : list
+        The best evidence configurations for the specified bin.
+    """
+    # Calculate the maximum probability for the given bin index
+    print("calculating optimal evidence...")
+    max_probability = max(probability for _, (probability, bin_idx) in target_predictions.items() if bin_idx == bin_index)
+
+    best_evidence = [evidence for evidence, (probability, bin_idx) in target_predictions.items() if bin_idx == bin_index and probability == max_probability]
+
+    return best_evidence
+    
 
 # def get_posteriors(all_ev_list, join_tree):
 #     obs_posteriors_dict = {}

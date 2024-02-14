@@ -151,6 +151,8 @@ def distribution_distance_error(correct_bin_locations, predicted_bin_probabiliti
 
         # Calculate the prediction accuracy
         prediction_accuracy = 1 - average_error
+    # Print the prediction accuracy
+    print("Prediction Accuracy: {:.2%}".format(prediction_accuracy))
 
     return norm_distance_errors, prediction_accuracy
 

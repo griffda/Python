@@ -55,3 +55,23 @@ def prepare_csv(csv_path, inputs, outputs):
     
     return data
 
+def find_best_evidence_for_bin(capcost_predictions, bin_index):
+    """
+    Find the evidence configuration with the highest probability for the specified bin.
+
+    Parameters
+    ----------
+    capcost_predictions : dict
+        Dictionary where the keys are the evidence configurations and the values are tuples containing the highest probability and the corresponding bin index.
+    bin_index : int
+        The bin index to find the best evidence configuration for.
+
+    Returns
+    -------
+    best_evidence : list
+        The best evidence configurations for the specified bin.
+    """
+    best_evidence = [evidence for evidence, (probability, bin_idx) in capcost_predictions.items() if bin_idx == bin_index and probability == max(probability for _, (probability, _) in capcost_predictions.items() if bin_idx == bin_index)]
+
+    return best_evidence
+
