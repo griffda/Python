@@ -23,8 +23,8 @@ def get_correct_values(obs_dicts, output):
     correct_bin_locations = []
     actual_values = []
 
-    # if isinstance(output, list):
-    #     output = output[0]  # Convert the list to a single string if it is a list
+    if isinstance(output, list):
+        output = output[0]  # Convert the list to a single string if it is a list
 
     for d in obs_dicts:
         for k, v in d.items():
@@ -119,6 +119,11 @@ def distribution_distance_error(correct_bin_locations, predicted_bin_probabiliti
         'D1' - distance between actual value and bin mean
         'D2' - distance between predicted value and bin mean
     """
+    print(correct_bin_locations, "correct_bin_locations")
+    print(predicted_bin_probabilities, "predicted_bin_probabilities")
+    print(actual_values, "actual_values")
+    print(bin_ranges, "bin_ranges")
+
 
     distance_errors = []
     norm_distance_errors = []
@@ -145,14 +150,20 @@ def distribution_distance_error(correct_bin_locations, predicted_bin_probabiliti
         norm_distance_error = distance_error/ (bin_ranges[len(bin_ranges) - 1][1] - bin_ranges[0][0])
         distance_errors.append(round(distance_error,3))
         norm_distance_errors.append(round(norm_distance_error,3))
+        
+
 
         # Calculate the average error
         average_error = sum(norm_distance_errors) / len(norm_distance_errors)
+        
 
         # Calculate the prediction accuracy
         prediction_accuracy = 1 - average_error
+    # print(norm_distance_errors)
+    # print(average_error)
+    # print(prediction_accuracy)
     # Print the prediction accuracy
-    print("Prediction Accuracy: {:.2%}".format(prediction_accuracy))
+    # print("Prediction Accuracy: {:.2%}".format(prediction_accuracy))
 
     return norm_distance_errors, prediction_accuracy
 

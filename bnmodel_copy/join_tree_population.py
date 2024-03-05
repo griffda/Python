@@ -19,6 +19,7 @@ def prob_dists(structure, data):
     ------- 
     join_tree : conditional probability table
     """
+    # print(data.head())
     bbn = Factory.from_data(structure, data)
     join_tree = InferenceController.apply(bbn)
     return join_tree, bbn

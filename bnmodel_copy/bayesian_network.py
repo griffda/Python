@@ -28,9 +28,8 @@ class BayesianNetwork:
             self.__load_inputs()
 
         if isinstance(self.inputs['output'], list):
-            self.inputs['output'] = self.inputs['output'][0]
+            self.inputs['output'] = self.inputs['output']
             pass
-
 
     def __load_inputs(self):
         """
@@ -43,14 +42,10 @@ class BayesianNetwork:
         """
         if isinstance(self.inputs['data'], str):
             data = bn.utilities.prepare_csv(self.inputs['data'], self.inputs['inputs'], self.inputs['output'])
-
         elif isinstance(self.inputs['data'], dict):
             data = pd.DataFrame(self.inputs['data'])
         else:
             raise ValueError('Invalid data format')
-
-        # If model data is supplied, load the data
-        data = bn.utilities.prepare_csv(self.inputs['data'], self.inputs['inputs'], self.inputs['output'])
 
         if self.inputs['method'] == 'uniform': # No k-fold cross-validation
             x, y, bin_edges, prior_xytrn = bn.discretisation.binning_data(data,
@@ -71,7 +66,8 @@ class BayesianNetwork:
             train_binned = train_binned.astype(str)
 
             self.train_binned = train_binned
-            self.test_binned = pd.concat([x_test, y_test], axis=1)
+            test_binned = pd.concat([x_test, y_test], axis=1)
+            self.test_binned = test_binned
 
         elif self.inputs['method'] == 'kfold': # k-fold cross-validation
             x, y, bin_edges, prior_xytrn = bn.discretisation.binning_data(data,
@@ -111,18 +107,41 @@ class BayesianNetwork:
 
         elif self.inputs['method'] == 'meta': # This is when the model is used to predict the output of a real case
             # discretise the data
+            # x, y, bin_edges, prior_xytrn = bn.discretisation.binning_data(data,
+            #                                                     self.inputs['nbins'],
+            #                                                     self.inputs['inputs'],
+            #                                                     self.inputs['output'])
+            # self.bin_edges = bin_edges
+            # self.prior_xytrn = prior_xytrn
+            # self.data = data
+
+            # #concatenate inputd and outputs to create a single dataframe
+            # self.train_binned = pd.concat([x, y], axis=1)
+            # self.train_binned = self.train_binned.astype(str)
+
             x, y, bin_edges, prior_xytrn = bn.discretisation.binning_data(data,
-                                                                self.inputs['nbins'],
-                                                                self.inputs['inputs'],
-                                                                self.inputs['output'])
+                                                                          self.inputs['nbins'],
+                                                                          self.inputs['inputs'],
+                                                                          self.inputs['output'])
             self.bin_edges = bin_edges
             self.prior_xytrn = prior_xytrn
             self.data = data
+            # print('data: ', data)   
 
-            #concatenate inputd and outputs to create a single dataframe
-            self.train_binned = pd.concat([x, y], axis=1)
-            self.train_binned = self.train_binned.astype(str)
-            # print(self.train_binned)
+
+            # Split the data into training and testing sets
+            x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=self.inputs['train_test_split'])
+
+            # Combine the binned data into a single DataFrame for each set
+            # Pybbn only reads data types as strings, so this line converts the data in the csv from int64 to string
+            train_binned = pd.concat([x_train, y_train], axis=1)
+            train_binned = train_binned.astype(str)
+
+            self.train_binned = train_binned
+            test_binned = pd.concat([x_test, y_test], axis=1)
+            self.test_binned = test_binned
+
+
         else:
             raise ValueError('Invalid method for discretisation')
 
@@ -138,6 +157,7 @@ class BayesianNetwork:
         """
         if self.inputs['method'] == 'uniform':
             self.join_tree, self.bbn = bn.join_tree_population.prob_dists(self.struct, self.train_binned)
+            print('Join-tree created, BN configured')
 
         elif self.inputs['method'] == 'kfold':
             for fold in self.folds:
@@ -147,6 +167,14 @@ class BayesianNetwork:
         elif self.inputs['method'] == 'meta': #need to add a section for meta where we use all the data to train the model and no validation is done
             #populate the join tree
             self.join_tree, self.bbn = bn.join_tree_population.prob_dists(self.struct, self.train_binned)
+            obs_dicts = bn.generate_posteriors.generate_multiple_obs_dicts(self.test_binned,
+                                                                            self.inputs['output'],
+                                                                            self.data)
+            all_ev_list = bn.generate_posteriors.gen_ev_list(self.test_binned,
+                                                                obs_dicts,
+                                                                self.inputs['output'])
+            self.all_ev_list = all_ev_list
+            print('Join-tree created, BN configured')
         else:
             raise ValueError('Invalid method for discretisation')
 
@@ -193,7 +221,8 @@ class BayesianNetwork:
                                                                 obs_dicts,
                                                                 self.inputs['output'])
                 self.all_ev_list = all_ev_list
-                # print('all_ev_list: ', all_ev_list)
+
+                #print('all_ev_list: ', all_ev_list)
                 obs_posteriors, predicted_posteriors, target_predictions = bn.generate_posteriors.get_all_posteriors(all_ev_list,
                                                                                                 self.folds[fold]['join_tree'],
                                                                                                 self.inputs['output'])
@@ -299,7 +328,7 @@ class BayesianNetwork:
         #     pickle.dump(self, outp, pickle.HIGHEST_PROTOCOL)
 
         # Save all_ev_list to a pickle file
-        with open('all_ev_list.pkl', 'wb') as f:
+        with open(self.inputs['save_evidence_path'], 'wb') as f:
             pickle.dump(self.all_ev_list, f)
 
     def run_model(self): #old routine
@@ -439,154 +468,190 @@ class BayesianNetwork:
                 d = json.loads(j)
                 jt = JoinTree.from_dict(d)
                 join_tree = InferenceController.apply_from_serde(jt)
+                print('Join tree loaded from file')
 
             # load the bin edges from json file
             with open(self.inputs['load_bin_edges_path'], 'r') as json_file:
                 bin_edges = json.load(json_file)
+                print('Bin edges loaded from file')
 
-            # load the all_ev_list from pickle file
-            with open('all_ev_list.pkl', 'rb') as f:
-                all_ev_list = pickle.load(f)
-                self.all_ev_list = all_ev_list
-
+            outputs = self.inputs['output']
+            inputs = self.inputs['inputs']
+            # inference_type = self.inputs['inference_type']
+            
             evidence_type = self.inputs['evidence_type']
-            inference_type = self.inputs['inference_type']
-            optimal_config_type = self.inputs['optimal_config_type']
-            optimal_config_target = self.inputs['optimal_config_target(s)']
 
-            if evidence_type == 'optimal_config':
-                print('Optimal config type chosen: ' + evidence_type)
+            if evidence_type == 'hard':
+                print(evidence_type + ' evidence type chosen, runnning model for a single case')
+                if 'evidence' in self.inputs and self.inputs['evidence'] is not None:
+                    # Hard evidence
+                    observations = self.inputs['evidence']
+                    evidence_vars = []
+                    for observation in observations:
+                        node_name = observation['nod']
+                        bin_index = observation['bin_index']
+                        value = observation['val']
+                        ev4jointree = bn.join_tree_population.evidence(node_name, int(bin_index), value, join_tree)
+                        join_tree.set_observation(ev4jointree)
+                        join_tree.unobserve_all
+                        self.join_tree = join_tree
+                        evidence_vars.append(node_name)
+                    # Generate posteriors and plot
+                    aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
+                    self.obs_posteriors = aux_obs
+                    print(self.obs_posteriors)
+                    # print(self.inputs['inputs'], self.inputs['output'])
+                    # print(evidence_vars)
+                    bn.plotting.plot_meta3(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs_plotting'], self.inputs['output_plotting'], evidence_vars, 3,)
+                else:
+                    print("'evidence' not provided or is None. Skipping sequence.")
 
-                if inference_type == 'forward':
-                    print('Inference type chosen: ' + inference_type)
+            elif evidence_type == 'soft': # this uses a different format for the evidence
+                if 'evidence_soft' in self.inputs and self.inputs['evidence_soft'] is not None:
+                    # Soft evidence
+                    evidence = self.inputs['evidence_soft']
+                    for node_name, values in evidence.items():
+                        node = join_tree.get_bbn_node_by_name(node_name)
+                        if node:
+                            for bin_index, value in enumerate(values, start=1):
+                                evidence_builder = EvidenceBuilder().with_node(node).with_type(EvidenceType.OBSERVATION)
+                                evidence_builder = evidence_builder.with_evidence(str(bin_index), value)
+                                evidence = evidence_builder.build()
+                                print(bin_index, value, node_name, values)
+                                join_tree.set_observation2(evidence)
+                                join_tree.unobserve_all
+                                self.join_tree = join_tree
+                        else:
+                            print(f"Bin index '{bin_index}' not found in the potentials for node '{node_name}'.")
+                    # Generate posteriors and plot
+                    aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
+                    self.obs_posteriors = aux_obs
 
-                    obs_posteriors, predicted_posteriors, target_predictions = bn.generate_posteriors.get_all_posteriors(self.all_ev_list, join_tree, self.inputs['output'])
+                    bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], 3)
+                else:
+                    print("'evidence_soft' not provided or is None. Skipping sequence.")
 
-                    if optimal_config_type == 'min_val':
-                        print('Optimal config type chosen: ' + optimal_config_type)
-                        min_bin_index = min(bin_index for _, bin_index in target_predictions.values())
-                        best_evidence = bn.generate_posteriors.find_best_evidence_for_bin(target_predictions, min_bin_index)
 
-                        print(f'The best evidence configurations are {best_evidence} with the highest probability prediction for bin {min_bin_index}')
+            elif evidence_type == 'soft2': # trying to use same dict format as hard evidence
+                if 'evidence' in self.inputs and self.inputs['evidence'] is not None:
+                # Soft evidence
+                    observations = self.inputs['evidence']
+                    for observation in observations:
+                        node_name = observation['nod']
+                        bin_index = observation['bin_index']
+                        value = observation['val']
+                        ev4jointree = bn.join_tree_population.evidence(node_name, int(bin_index), value, join_tree)
+                        print(bin_index, value, node_name)
+                        join_tree.set_observation2(ev4jointree)
+                        print(ev4jointree)
+                        #join_tree.unobserve_all  # Unobserve all after setting all the evidence
+                        self.join_tree = join_tree
+                    for node, posteriors_raw in join_tree.get_posteriors().items():
+                        posteriors = {int(k): v for k, v in posteriors_raw.items()}
+                        print(node, posteriors)
+                    aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
+                    print(aux_obs)
+                    self.obs_posteriors = aux_obs
+                    bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], 3)
+                else:
+                    print("'evidence' not provided or is None. Skipping sequence.")     
+            
+            # elif 'optimal_config' in evidence_type:
+            elif evidence_type == 'optimal_config': # this uses a different format for the evidence
+                analysis_type = self.inputs['analysis_type'][0]  # Get the first item from the analysis_type list
 
-                    elif optimal_config_type == 'max_val':
-                        print('Optimal config type chosen: ' + optimal_config_type)
-                        max_bin_index = max(bin_index for _, bin_index in target_predictions.values())
-                        best_evidence = bn.generate_posteriors.find_best_evidence_for_bin(target_predictions, max_bin_index)
-                        # print(best_evidence)
-                        print(f'The best evidence configurations are {best_evidence} with the highest probability prediction for bin {max_bin_index}')
-                if inference_type == 'reverse':
-                    print('Inference type chosen: ' + inference_type)
+                ###forward inference optimal config type
+                if 'optimal_config' in analysis_type and analysis_type['optimal_config'] is not None: 
+                    print('Optimal config type chosen: ' + str(analysis_type))
+                    # Generate all evidence combinations
+                    all_evidence_combinations = bn.generate_posteriors.generate_all_evidence_combinations2(self.inputs)
+                    print('All evidence combinations: ', len(all_evidence_combinations))
 
-                    obs_posteriors, predicted_posteriors, target_predictions = bn.generate_posteriors.get_all_posteriors(self.all_ev_list, join_tree, self.inputs['output'])
+                    _, _, all_target_predictions = bn.generate_posteriors.get_all_posteriors_new(all_evidence_combinations, join_tree, self.inputs['output'])             
+                    print(all_target_predictions)
 
-                    # Reverse inference
-                    # Get the best evidence configuration for the lowest bin
-                    if optimal_config_type == 'min_val':
-                        print('Optimal config type chosen: ' + optimal_config_type)
-                        min_bin_index = min(bin_index for _, bin_index in target_predictions.values())
-                        best_evidence = bn.generate_posteriors.find_best_evidence_for_bin(target_predictions, min_bin_index)
+                    # Extract the optimal_config dictionary from the analysis_type
+                    optimal_config = analysis_type['optimal_config']
 
-                        print(f'The best evidence configurations are {best_evidence} with the highest probability prediction for bin {min_bin_index}')
-                    elif optimal_config_type == 'max_val':
-                        print('Optimal config type chosen: ' + optimal_config_type)
-                        max_bin_index = max(bin_index for _, bin_index in target_predictions.values())
-                        best_evidence = bn.generate_posteriors.find_best_evidence_for_bin(target_predictions, max_bin_index)
-                        # print(best_evidence)
-                        print(f'The best evidence configurations are {best_evidence} with the highest probability prediction for bin {max_bin_index}')
+                    # Iterate over the optimal_config dictionary
+                    for output_variable, config_type in optimal_config.items():
+                        # Check if the output_variable exists in all_target_predictions
+                        if output_variable in all_target_predictions:
+                            best_evidence = bn.generate_posteriors.find_best_evidence_for_bin(all_target_predictions[output_variable], config_type)
+                            print(f"Best evidence for {output_variable} ({config_type}): {best_evidence}")
+                        else:
+                            print(f"No predictions found for {output_variable}")
+                    
+                    best_evidence = ast.literal_eval(best_evidence)
+                    print(best_evidence)
+                    observations = best_evidence
+                    
+                    # Generate posteriors of best evidence and plot
+                    evidence_vars = []
+                    join_tree.unobserve_all()
+                    for observation in observations:
+                        
+                        node_name = observation['nod']
+                        bin_index = observation['bin_index']
+                        value = observation['val']
+                        # print(node_name, bin_index, value)
+                        ev4jointree = bn.join_tree_population.evidence(node_name, int(bin_index), value, join_tree)
+                        join_tree.set_observation(ev4jointree)
+                        self.join_tree = join_tree
+                        evidence_vars.append(node_name)
 
-                    # Parse the best evidence configuration back into a dictionary
-                    best_evidence = ast.literal_eval(best_evidence[0])
-                # print(best_evidence)
-                observations = best_evidence
+                        # Generate posteriors and plot
+                    aux_obs, _, = bn.generate_posteriors.get_posteriors(self.join_tree, self.inputs['output'])
+                    self.obs_posteriors = aux_obs
+                    print(self.obs_posteriors)
+                    bn.plotting.plot_meta2(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], evidence_vars, 3)
+                else:
+                    print("Optimal config not provided or is None. Skipping sequence.")
+
+                ### Reverse inference optimal config        
+                if 'reverse_optimal' in analysis_type: 
+                    print('Optimal config type chosen: ' + str(analysis_type))
+
+                    all_evidence_combinations = bn.generate_posteriors.generate_all_evidence_combinations2(self.inputs)
+                    print('All evidence combinations: ', len(all_evidence_combinations))
+
+                    _, _, all_target_predictions = bn.generate_posteriors.get_all_posteriors_new(all_evidence_combinations, join_tree, self.inputs['inputs'])
+                    print(all_target_predictions)
+
+                    # Extract the strongest posteriors from the all_target_predictions
+                    for input_variable in inputs:
+                        if input_variable in all_target_predictions:
+                            max_probability = float('-inf')
+                            best_evidence = None
+                            for evidence, (probability, bin_index) in all_target_predictions[input_variable].items():
+                                ##there is no min or max config type for inputs so we can just use the max config type
+                                if probability > max_probability:
+                                    max_probability = probability
+                                    best_evidence = evidence
+                                    print(f"Best evidence for {input_variable} ({analysis_type}): {best_evidence}")
+                    best_evidence = ast.literal_eval(best_evidence)
+                    print(best_evidence)
+                    observations = best_evidence
+                
+                # Generate posteriors of best evidence and plot
                 evidence_vars = []
                 join_tree.unobserve_all()
                 for observation in observations:
+                    
                     node_name = observation['nod']
-
                     bin_index = observation['bin_index']
-
                     value = observation['val']
-                    print(node_name, bin_index, value)
+                    # print(node_name, bin_index, value)
                     ev4jointree = bn.join_tree_population.evidence(node_name, int(bin_index), value, join_tree)
                     join_tree.set_observation(ev4jointree)
-
                     self.join_tree = join_tree
                     evidence_vars.append(node_name)
 
                     # Generate posteriors and plot
-                aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(self.join_tree, self.inputs['output'])
+                aux_obs, _, = bn.generate_posteriors.get_posteriors(self.join_tree, self.inputs['output'])
                 self.obs_posteriors = aux_obs
                 print(self.obs_posteriors)
                 bn.plotting.plot_meta2(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], evidence_vars, 3)
-
-            elif evidence_type[1] == 'hard':
-                # Hard evidence
-                observations = self.inputs['evidence']
-                evidence_vars = []
-                for observation in observations:
-                    node_name = observation['nod']
-                    bin_index = observation['bin_index']
-                    value = observation['val']
-                    ev4jointree = bn.join_tree_population.evidence(node_name, int(bin_index), value, join_tree)
-                    join_tree.set_observation(ev4jointree)
-                    join_tree.unobserve_all
-                    self.join_tree = join_tree
-                    evidence_vars.append(node_name)
-                # Generate posteriors and plot
-                aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
-                self.obs_posteriors = aux_obs
-                # print(self.inputs['inputs'], self.inputs['output'])
-                # print(evidence_vars)
-                bn.plotting.plot_meta2(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], evidence_vars, 3)
-
-            elif evidence_type[2] == 'soft': # this uses a different format for the evidence
-                # Soft evidence
-                evidence = self.inputs['evidence_soft']
-                for node_name, values in evidence.items():
-                    node = join_tree.get_bbn_node_by_name(node_name)
-                    if node:
-                        for bin_index, value in enumerate(values, start=1):
-                            evidence_builder = EvidenceBuilder().with_node(node).with_type(EvidenceType.OBSERVATION)
-                            evidence_builder = evidence_builder.with_evidence(str(bin_index), value)
-                            evidence = evidence_builder.build()
-                            print(bin_index, value, node_name, values)
-                            join_tree.set_observation2(evidence)
-                            join_tree.unobserve_all
-                            self.join_tree = join_tree
-                    else:
-                        print(f"Bin index '{bin_index}' not found in the potentials for node '{node_name}'.")
-                # Generate posteriors and plot
-                aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
-                self.obs_posteriors = aux_obs
-
-                bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], 3)
-
-            elif evidence_type == 'soft2': # trying to use same dict format as hard evidence
-                # Soft evidence
-                observations = self.inputs['evidence']
-                for observation in observations:
-                    node_name = observation['nod']
-                    bin_index = observation['bin_index']
-                    value = observation['val']
-                    ev4jointree = bn.join_tree_population.evidence(node_name, int(bin_index), value, join_tree)
-                    print(bin_index, value, node_name)
-                    join_tree.set_observation2(ev4jointree)
-                    print(ev4jointree)
-                    #join_tree.unobserve_all  # Unobserve all after setting all the evidence
-                    self.join_tree = join_tree
-                for node, posteriors_raw in join_tree.get_posteriors().items():
-                    posteriors = {int(k): v for k, v in posteriors_raw.items()}
-                    print(node, posteriors)
-                aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
-                print(aux_obs)
-                self.obs_posteriors = aux_obs
-                bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], 3)
             else:
                 raise ValueError('Invalid evidence type')
-            # # Generate posteriors and plot
-            # aux_obs, aux_prd = bn.generate_posteriors.get_posteriors(join_tree, self.inputs['output'])
-            # self.obs_posteriors = aux_obs
-
-            # # # plot the posteriors
-            # bn.plotting.plot_meta(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], 3)
+            
