@@ -119,10 +119,10 @@ def distribution_distance_error(correct_bin_locations, predicted_bin_probabiliti
         'D1' - distance between actual value and bin mean
         'D2' - distance between predicted value and bin mean
     """
-    print(correct_bin_locations, "correct_bin_locations")
-    print(predicted_bin_probabilities, "predicted_bin_probabilities")
-    print(actual_values, "actual_values")
-    print(bin_ranges, "bin_ranges")
+    # print(correct_bin_locations, "correct_bin_locations")
+    # print(predicted_bin_probabilities, "predicted_bin_probabilities")
+    # print(actual_values, "actual_values")
+    # print(bin_ranges, "bin_ranges")
 
 
     distance_errors = []
@@ -206,6 +206,6 @@ def generateErrors (predictedTargetPosteriors, testingData, binnedTestingData, b
     for p in range(len(testingData[target])):
         # print(p)
         correct_bin_probabilities.append(predictedTargetPosteriors[p][binnedTestingData[target][p]])
-    print(correct_bin_probabilities)
+    # print(correct_bin_probabilities)
 
     return float(rmse),float(loglossfunction),norm_distance_errors,correct_bin_probabilities

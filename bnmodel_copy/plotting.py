@@ -10,7 +10,7 @@ import pickle
 import seaborn as sns
 
 
-def plot_errors(norm_distance_errors, histnbins, prediction_accuracy, av_prediction_accuracy, axperrow=5):
+def plot_errors(norm_distance_errors, histnbins, prediction_accuracy, av_prediction_accuracy, axperrow=2):
     """
     Plot the errors in a histogram.
     Each figure contains subplots, and each subplot is a fold.
@@ -390,7 +390,7 @@ def plot_meta2(posteriors, edges, priors, inputs, outputs, evidence_vars, axperr
     plt.show(block=False)
     plt.tight_layout()
 
-def plot_meta3(posteriors, edges, priors, inputs, outputs, evidence_vars, axperrow: int = 3):
+def plot_meta3(posteriors, edges, priors, inputs, outputs, evidence_vars, axperrow: int = 4):
     """
     Plot the results of the meta model inference in a figure showing posteriors from observations
 
@@ -442,7 +442,11 @@ def plot_meta3(posteriors, edges, priors, inputs, outputs, evidence_vars, axperr
         # Calculate xtick positions based on bin edges and shift one position to the left
         xtick_positions = np.arange(len(edges[var])) - 0.5
         ax[idx].set_xticks(xtick_positions)
-        ax[idx].set_xticklabels(['{:.2f}'.format(edge) for edge in edges[var]], fontsize=14)
+        # if capital cost and high grade waste hear is the variable, then reduce decimal places
+        if var == 'capcost' or var == 'high_grade_wasteheat' or var == 'net_electrical_output':
+            ax[idx].set_xticklabels(['{:.0f}'.format(edge) for edge in edges[var]], fontsize=10)
+        else:   
+            ax[idx].set_xticklabels(['{:.2f}'.format(edge) for edge in edges[var]], fontsize=10)
 
         if idx // axperrow == nrow - 1:
             ax[idx].set_xlabel('Ranges', fontsize=14)

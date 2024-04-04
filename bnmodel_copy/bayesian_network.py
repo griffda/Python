@@ -502,7 +502,7 @@ class BayesianNetwork:
                     print(self.obs_posteriors)
                     # print(self.inputs['inputs'], self.inputs['output'])
                     # print(evidence_vars)
-                    bn.plotting.plot_meta3(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs_plotting'], self.inputs['output_plotting'], evidence_vars, 3,)
+                    bn.plotting.plot_meta3(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs_plotting'], self.inputs['output_plotting'], evidence_vars, 4)
                 else:
                     print("'evidence' not provided or is None. Skipping sequence.")
 

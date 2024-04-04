@@ -29,22 +29,22 @@ def remove_parenthesis(df):
     df.columns = df.columns.str.replace(')', '')
     return df
 
-# def remove_square_brackets(df):
-#     """
-#     Remove square brackets from the column names of a dataframe
-#     """
-#     df.columns = df.columns.str.replace('[', '')
-#     df.columns = df.columns.str.replace(']', '')
-#     return df
+def remove_square_brackets(df):
+    """
+    Remove square brackets from the column names of a dataframe
+    """
+    df.columns = df.columns.str.replace('[', '')
+    df.columns = df.columns.str.replace(']', '')
+    return df
 
-# def prepare_inputs_outputs(inputs, outputs):
-#     """
-#     Prepare the inputs and outputs for the model
-#     """
-#     inputs = [input.replace('(', '').replace(')', '').replace('[', '').replace(']', '') for input in inputs]
-#     outputs = [output.replace('(', '').replace(')', '').replace('[', '').replace(']', '') for output in outputs]
+def prepare_inputs_outputs(inputs, outputs):
+    """
+    Prepare the inputs and outputs for the model
+    """
+    inputs = [input.replace('(', '').replace(')', '').replace('[', '').replace(']', '') for input in inputs]
+    outputs = [output.replace('(', '').replace(')', '').replace('[', '').replace(']', '') for output in outputs]
     
-#     return inputs, outputs
+    return inputs, outputs
 
 def prepare_csv(csv_path, inputs, outputs):
     """
@@ -52,6 +52,7 @@ def prepare_csv(csv_path, inputs, outputs):
     """
     data = pd.read_csv(csv_path) 
     data = remove_parenthesis(data)
+    data = remove_square_brackets(data)
     if 'run' in data.columns:
         data = data.drop('run', axis = 1)
     
