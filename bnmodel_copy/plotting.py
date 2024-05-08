@@ -91,7 +91,7 @@ def plot_sensitivity_analysis_2D_line(results):#2D line plot of sensitivity anal
     plt.show()
 
 def plot_sensitivity_analysis_3D_surface(path):#3D surface plot of sensitivity analysis
-    with open('sa_results_te_data_v3_D1.pkl', 'rb') as f:
+    with open('data/sa_results_te_data_v3_D1.pkl', 'rb') as f:
         results = pickle.load(f)
     # Convert dictionary to DataFrame
     data = pd.DataFrame(results.values(), columns=['inputs', 'outputs', 'accuracy'])
@@ -115,15 +115,16 @@ def plot_sensitivity_analysis_3D_surface(path):#3D surface plot of sensitivity a
     surf = ax.plot_surface(xi, yi, zi, rstride=1, cstride=1, cmap=plt.cm.coolwarm, linewidth=0.5, antialiased=True)
 
     # Add a colorbar
-    fig.colorbar(surf, ax=ax, label='Prediction accuracy (%)')
-    #increase space between colour bar and plot
-    fig.subplots_adjust(right=1)
+    fig.colorbar(surf, ax=ax, label='Prediction accuracy (%)', pad = 0.15)
 
     # Set labels
-    ax.set_xlabel('Number of bins for inputs', fontsize=14)
-    ax.set_ylabel('Number of bins for outputs', fontsize=14)
-    ax.set_zlabel('Prediction accuracy (%)', fontsize=14)
-    ax.set_title('Bin-configuration sensitivity analysis', fontsize=16)
+    ax.set_xlabel('Number of bins: inputs', fontsize=14)
+    ax.set_ylabel('Number of bins: outputs', fontsize=14)
+    #set x and y limits
+    # ax.ylim = (3, 7)
+    # ax.xlim = (3, 7)
+    # ax.set_zlabel('Prediction accuracy (%)', fontsize=14)
+    # ax.set_title('Bin-configuration sensitivity analysis', fontsize=16)
     ax.invert_xaxis()
 
     # Show the plot
@@ -390,7 +391,7 @@ def plot_meta2(posteriors, edges, priors, inputs, outputs, evidence_vars, axperr
     plt.show(block=False)
     plt.tight_layout()
 
-def plot_meta3(posteriors, edges, priors, inputs, outputs, evidence_vars, axperrow: int = 4):
+def plot_meta3(posteriors, edges, priors, inputs, outputs, evidence_vars, axperrow: int = 3):
     """
     Plot the results of the meta model inference in a figure showing posteriors from observations
 
@@ -436,7 +437,7 @@ def plot_meta3(posteriors, edges, priors, inputs, outputs, evidence_vars, axperr
         ax[idx].grid(True, linestyle='--', alpha=0.5)
         ax[idx].set_facecolor('whitesmoke')
         title = inputs.get(var, outputs.get(var, var))
-        ax[idx].set_title(title, fontweight="bold", fontsize=16)
+        ax[idx].set_title(title, fontsize=16)
         ax[idx].set_ylim([0, 1])
         
         # Calculate xtick positions based on bin edges and shift one position to the left
@@ -445,6 +446,8 @@ def plot_meta3(posteriors, edges, priors, inputs, outputs, evidence_vars, axperr
         # if capital cost and high grade waste hear is the variable, then reduce decimal places
         if var == 'capcost' or var == 'high_grade_wasteheat' or var == 'net_electrical_output':
             ax[idx].set_xticklabels(['{:.0f}'.format(edge) for edge in edges[var]], fontsize=10)
+        elif var == 'fimp14':
+            ax[idx].set_xticklabels(['{:.5f}'.format(edge) for edge in edges[var]], fontsize=10)
         else:   
             ax[idx].set_xticklabels(['{:.2f}'.format(edge) for edge in edges[var]], fontsize=10)
 

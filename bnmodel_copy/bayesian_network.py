@@ -295,11 +295,11 @@ class BayesianNetwork:
                 bin_config = f'inputs: {nbins_input}, output: {nbins_output}'
                 results[bin_config] = (nbins_input, nbins_output, self.errors['prediction_accuracy'])
                 # print(bin_config, results[bin_config])
-        with open('sa_results_te_data_v3_D1.pkl', 'wb') as f:
+        with open('sa_results_process_data_D2.pkl', 'wb') as f:
             pickle.dump(results, f)
         return results
 
-    #bn.plotting.plot_sensitivity_analysis(results)
+    # bn.plotting.plot_sensitivity_analysis(results)
 
     def save(self, path): #this is where we want to save the join_tree
         """
@@ -502,7 +502,7 @@ class BayesianNetwork:
                     print(self.obs_posteriors)
                     # print(self.inputs['inputs'], self.inputs['output'])
                     # print(evidence_vars)
-                    bn.plotting.plot_meta3(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs_plotting'], self.inputs['output_plotting'], evidence_vars, 4)
+                    bn.plotting.plot_meta3(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs_plotting'], self.inputs['output_plotting'], evidence_vars, 3)
                 else:
                     print("'evidence' not provided or is None. Skipping sequence.")
 

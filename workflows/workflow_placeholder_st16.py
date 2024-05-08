@@ -34,7 +34,6 @@ model.train()
 # 3. Cross-validate the model
 model.validate()
 
-
 #%%
 # 4. Save the model
 model.save('')

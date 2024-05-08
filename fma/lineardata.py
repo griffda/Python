@@ -19,9 +19,6 @@ def make_data(n):
     ###generating one column of n samples for force around value of 10 with SD of 0.2 using a unfirom distribution
     sample_force = np.random.uniform(size=n, low=6.0, high=12.0)
 
-     
-     
-
     ### f = ma rearranged to calculate acceleration given a force and a mass. 
     acc = sample_force / sample_masses 
     acc_squared = acc**2    ###squaring the acceleration to make it easier to plot
@@ -51,10 +48,10 @@ def create_output_dataframe(sample_array):
                            )
     
          ###Saving to new csv after data manipulation
-     out_dat.to_csv('outputv6.csv', index=False)
+     out_dat.to_csv('outputv8.csv', index=False)
      return out_dat
 
 ###FUNCTIONS 
-sample_array = make_data(5000)
+sample_array = make_data(1000)
 out_dat = create_output_dataframe(sample_array)     
 # plt.show()
