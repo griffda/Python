@@ -6,7 +6,7 @@ from bnmodel_copy.bayesian_network import BayesianNetwork
 # discretisation method (equidistant, percentile...)
 # train/test percentage
 #%%
-inputs = {'data': 'outputv8.csv',
+inputs = {'data': 'data/outputv8.csv',
           'inputs': ['force','mass'],
           'output': ['acceleration'],
           'inputs_plotting': {'force': '$F$ [N]', 'mass': '$m$ [kg]'},
@@ -15,8 +15,8 @@ inputs = {'data': 'outputv8.csv',
           'nbins_sensitivity_range': [3, 11],
           'kfoldnbins': 25,
           'nfolds': 10,    
-          'method': 'meta',
-          'error_type': 'D1',
+          'method': 'kfold',
+          'error_type': 'D2',
           'discretisation': [{'inputs':'uniform', 'output':'percentile'}],
           'evidence_type': 'hard', # 'hard' or 'soft or 'optimal_config'
           #'analysis_type': [{'optimal_config': {'net_electrical_output': 'max', 'capcost': 'min', 'high_grade_wasteheat': 'max'}}],
@@ -33,14 +33,14 @@ inputs = {'data': 'outputv8.csv',
           }
 #%%
 model = BayesianNetwork(inputs)
-model.run_model2()
+
 #%%
 # 2. Train the model 
 model.train() 
 
 #%%
 # 3. Cross-validate the model
-# model.validate()
+model.validate()
 
 #%%
 # 4. Save the model

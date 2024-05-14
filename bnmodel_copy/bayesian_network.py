@@ -502,7 +502,7 @@ class BayesianNetwork:
                     print(self.obs_posteriors)
                     # print(self.inputs['inputs'], self.inputs['output'])
                     # print(evidence_vars)
-                    bn.plotting.plot_meta3(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs_plotting'], self.inputs['output_plotting'], evidence_vars, 3)
+                    bn.plotting.plot_meta3(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs_plotting'], self.inputs['output_plotting'], evidence_vars, 5)
                 else:
                     print("'evidence' not provided or is None. Skipping sequence.")
 
@@ -604,7 +604,7 @@ class BayesianNetwork:
                     aux_obs, _, = bn.generate_posteriors.get_posteriors(self.join_tree, self.inputs['output'])
                     self.obs_posteriors = aux_obs
                     print(self.obs_posteriors)
-                    bn.plotting.plot_meta2(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], evidence_vars, 3)
+                    bn.plotting.plot_meta2(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs'], self.inputs['output'], evidence_vars, 5)
                 else:
                     print("Optimal config not provided or is None. Skipping sequence.")
 
