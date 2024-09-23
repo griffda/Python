@@ -1,0 +1,41 @@
+Concept,Year,Lawson
+Tokamak,1969,2.0e16
+Stellarator,1969,1.0e14
+Tokamak,1971,6.8e16
+Tokamak,1972,2.4e17
+Tokamak,1974,1.3e18
+Tokamak,1976,3.2e18
+Tokamak,1978,2.4e19
+Stellarator,1980,8.6e17
+Tokamak,1984,1.2e20
+Tokamak,1991,6.1e20
+Tokamak,1991,6.0e20
+Tokamak,1995,7.9e20
+ST,1998,6.1e16
+Stellarator,2002,1.5e19
+ST,2006,4.5e18
+Stellarator,2008,5.2e19
+ST,2009,4.8e18
+Stellarator,2017,6.2e19
+SPARC,2025,6.2e21
+ITER,2039,7.4e21
+RFP,1977,1.0e13
+Mirror,1984,3.0e14
+RFP,1984,3.2e15
+RFP,1987,2.2e16
+Spheromak,1990,1.6e15
+FRC,1993,7.1e16
+Z Pinch,2003,3.3e15
+Spheromak,2007,1.1e17
+Mirror,2007,1.3e18
+RFP,2008,7.5e16
+RFP,2009,1.7e17
+RFP,2009,1.9e17
+Z Pinch,2018,2.2e17
+FRC,2021,2.3e17
+Laser ICF,1994,8.3e19
+Laser ICF,2009,4.9e20
+Laser ICF,2014,3.8e21
+MagLIF,2014,2.4e20
+MagLIF,2015,3.0e20
+NIF,2022,1.0e22

@@ -12,7 +12,7 @@ import numpy as np
 import os
 import json
 import ast
-
+import time
 class BayesianNetwork:
     def __init__(self, inputs):
         if isinstance(inputs, str):
@@ -290,12 +290,19 @@ class BayesianNetwork:
         for nbins_input in range(start, end):
             for nbins_output in range(start, end):
                 self.inputs['nbins'] = [{'inputs': nbins_input, 'output': nbins_output}]
+                
+                start_time = time.time()
                 self.train()
+                train_time = time.time() - start_time
+                
+                start_time = time.time()
                 self.validate()
+                validate_time = time.time() - start_time
+                
                 bin_config = f'inputs: {nbins_input}, output: {nbins_output}'
-                results[bin_config] = (nbins_input, nbins_output, self.errors['prediction_accuracy'])
+                results[bin_config] = (nbins_input, nbins_output, self.errors['prediction_accuracy'], train_time, validate_time)
                 # print(bin_config, results[bin_config])
-        with open('sa_results_process_data_D2.pkl', 'wb') as f:
+        with open('sa_results_process_d2_0624.pkl', 'wb') as f:
             pickle.dump(results, f)
         return results
 
@@ -502,7 +509,7 @@ class BayesianNetwork:
                     print(self.obs_posteriors)
                     # print(self.inputs['inputs'], self.inputs['output'])
                     # print(evidence_vars)
-                    bn.plotting.plot_meta3(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs_plotting'], self.inputs['output_plotting'], evidence_vars, 5)
+                    bn.plotting.plot_meta3(self.obs_posteriors, bin_edges, self.prior_xytrn, self.inputs['inputs_plotting'], self.inputs['output_plotting'], evidence_vars, 4)
                 else:
                     print("'evidence' not provided or is None. Skipping sequence.")
 

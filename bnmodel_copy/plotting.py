@@ -33,11 +33,13 @@ def plot_errors(norm_distance_errors, histnbins, prediction_accuracy, av_predict
     fig, ax = plt.subplots(nrow, ncol, figsize=(12, 4), squeeze=False)
     ax = ax.flatten()  # Flatten the axes array into a 1D array
     
-    fig.suptitle('Normalised distance error distributions {:.2%}'.format(av_prediction_accuracy), fontsize=16)
+    # fig.suptitle('Normalised distance error distributions {:.2%}'.format(av_prediction_accuracy), fontsize=16)
+    fig.suptitle('Average NDE: 95.31(%)', fontsize=16)
+
 
     for i in range(nax):
         ax[i].hist(norm_distance_errors[i], bins=histnbins, linewidth=0.2, edgecolor='black', color='black')
-        ax[i].set_title('Fold {}, Prediction Accuracy: {:.2%}'.format(i+1, prediction_accuracy[i]))
+        ax[i].set_title('Fold {}'.format(i+1))
         ax[i].set_xlim([0, 1])
         ax[i].grid(True, linestyle='--', alpha=0.5)
         ax[i].set_facecolor('whitesmoke')
@@ -91,7 +93,7 @@ def plot_sensitivity_analysis_2D_line(results):#2D line plot of sensitivity anal
     plt.show()
 
 def plot_sensitivity_analysis_3D_surface(path):#3D surface plot of sensitivity analysis
-    with open('data/sa_results_te_data_v3_D1.pkl', 'rb') as f:
+    with open('data/SA_results/sa_results_st20_trimmed_V2.pkl', 'rb') as f:
         results = pickle.load(f)
     # Convert dictionary to DataFrame
     data = pd.DataFrame(results.values(), columns=['inputs', 'outputs', 'accuracy'])
@@ -324,7 +326,7 @@ def plot_meta(posteriors, edges, priors, inputs, outputs, evidence_vars, axperro
     plt.show(block=False)
     plt.tight_layout()
 
-def plot_meta2(posteriors, edges, priors, inputs, outputs, evidence_vars, axperrow: int = 3):
+def plot_meta2(posteriors, edges, priors, inputs, outputs, evidence_vars, axperrow: int = 5):
     """
     Plot the results of the meta model inference in a figure showing posteriors from observations
 
@@ -391,7 +393,7 @@ def plot_meta2(posteriors, edges, priors, inputs, outputs, evidence_vars, axperr
     plt.show(block=False)
     plt.tight_layout()
 
-def plot_meta3(posteriors, edges, priors, inputs, outputs, evidence_vars, axperrow: int = 3):
+def plot_meta3(posteriors, edges, priors, inputs, outputs, evidence_vars, axperrow: int = 5):
     """
     Plot the results of the meta model inference in a figure showing posteriors from observations
 
@@ -437,25 +439,31 @@ def plot_meta3(posteriors, edges, priors, inputs, outputs, evidence_vars, axperr
         ax[idx].grid(True, linestyle='--', alpha=0.5)
         ax[idx].set_facecolor('whitesmoke')
         title = inputs.get(var, outputs.get(var, var))
-        ax[idx].set_title(title, fontsize=16)
+        ax[idx].set_title(title, fontsize=28)
         ax[idx].set_ylim([0, 1])
+        ax[idx].tick_params(axis='y', labelsize=18)
+
+        
         
         # Calculate xtick positions based on bin edges and shift one position to the left
         xtick_positions = np.arange(len(edges[var])) - 0.5
         ax[idx].set_xticks(xtick_positions)
         # if capital cost and high grade waste hear is the variable, then reduce decimal places
-        if var == 'capcost' or var == 'high_grade_wasteheat' or var == 'net_electrical_output':
-            ax[idx].set_xticklabels(['{:.0f}'.format(edge) for edge in edges[var]], fontsize=10)
+        if var == 'capcost' or var == 'high_grade_wasteheat' or var == 'net_electrical_output' or var == 'outlet_temp' :
+            ax[idx].set_xticklabels(['{:.0f}'.format(edge) for edge in edges[var]], fontsize=18, rotation=45)
+        # this needs to be changed to standard form for fimp14
         elif var == 'fimp14':
-            ax[idx].set_xticklabels(['{:.5f}'.format(edge) for edge in edges[var]], fontsize=10)
+            ax[idx].set_xticklabels(['{:.0e}'.format(edge) for edge in edges[var]], fontsize=18, rotation=45)
+        elif var == 'pseprmax':
+            ax[idx].set_xticklabels(['{:.1f}'.format(edge) for edge in edges[var]], fontsize=18, rotation=45)
         else:   
-            ax[idx].set_xticklabels(['{:.2f}'.format(edge) for edge in edges[var]], fontsize=10)
+            ax[idx].set_xticklabels(['{:.2f}'.format(edge) for edge in edges[var]], fontsize=18, rotation=45)
 
         if idx // axperrow == nrow - 1:
-            ax[idx].set_xlabel('Ranges', fontsize=14)
+            ax[idx].set_xlabel('Ranges', fontsize=24)
 
         if idx % axperrow == 0:
-            ax[idx].set_ylabel('Probability', fontsize=14)
+            ax[idx].set_ylabel('Probability', fontsize=24)
 
     # Remove unused subplots
     for idx in range(len(colnames), nrow * ncol):
